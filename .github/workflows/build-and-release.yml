@@ -38,27 +38,46 @@ jobs:
       - name: Build xcframework package
         run: make build
 
+      - name: Check for SwiftSyntax symbols
+        run: make check_swiftsyntax
+
+      - name: Check for duplicate runtime symbols
+        run: make check_no_runtime_symbols
+
       - name: Package for Distribution
         run: make dist
 
-      - name: Sign macOS frameworks
+      - name: Sign frameworks
         if: env.MACOS_CERTIFICATE != ''
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
         run: |
-          # Find signing identity from keychain (first code signing certificate)
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
           SIGNING_IDENTITY=$(security find-identity -v -p codesigning | grep -o '"[^"]*"' | head -1 | tr -d '"')
           echo "Using signing identity: $SIGNING_IDENTITY"
-          
-          # Sign all macOS frameworks
-          for fw in addons/*/bin/*.framework; do
+
+          sign_framework() {
+            local fw="$1"
             if [[ -d "$fw" ]]; then
               echo "Signing $fw"
-              codesign --keychain $RUNNER_TEMP/app-signing.keychain-db --force --options runtime \
+              codesign --keychain "$KEYCHAIN_PATH" --force --options runtime \
                 --sign "$SIGNING_IDENTITY" \
-                $fw
-              echo "Verifying file $signfile"
-              codesign --keychain $RUNNER_TEMP/app-signing.keychain-db --verify --verbose $fw
+                "$fw"
+              codesign --keychain "$KEYCHAIN_PATH" --verify --verbose "$fw"
+            fi
+          }
+
+          # Sign standalone macOS frameworks (GodotApplePlugins + SwiftGodotRuntime)
+          for fw in addons/*/bin/*.framework; do
+            sign_framework "$fw"
+          done
+
+          # Sign frameworks inside xcframeworks (iOS + iOS Simulator slices)
+          for xcfw in addons/*/bin/*.xcframework; do
+            if [[ -d "$xcfw" ]]; then
+              for fw in "$xcfw"/*/*.framework; do
+                sign_framework "$fw"
+              done
             fi
           done
 

@@ -29,7 +29,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/migueldeicaza/SwiftGodot", revision: "61f258c8a679ca8e2b637befb77daf1a640a5349")
+        .package(url: "https://github.com/migueldeicaza/SwiftGodot", revision: "d54c377787fbf9276712de25e1fcd7b709d6bba9")
         // For local development:
         //.package(path: "../SwiftGodot")
     ],
@@ -37,7 +37,7 @@ let package = Package(
         .target(
             name: "GodotApplePlugins",
             dependencies: [
-                .product(name: "SwiftGodotRuntimeStatic", package: "SwiftGodot")
+                .product(name: "SwiftGodotRuntime", package: "SwiftGodot")
             ],
             swiftSettings: swiftSettings,
             linkerSettings: linkerSettings

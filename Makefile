@@ -1,4 +1,4 @@
-.PHONY: run xcframework check_swiftsyntax
+.PHONY: run xcframework check_swiftsyntax check_no_runtime_symbols
 
 # Allow overriding common build knobs.
 CONFIG ?= Release
@@ -39,14 +39,14 @@ build:
 		if [ "$$platform_lc" = "macos" ]; then \
 			suffix="$$arch_name"; \
 		fi; \
-	    for framework in $(FRAMEWORK_NAMES); do \
-			$(XCODEBUILD) \
-				-workspace '$(WORKSPACE)' \
-				-scheme $$framework \
-				-configuration '$(CONFIG)' \
-				-destination "$$dest" \
-				-derivedDataPath "$(DERIVED_DATA)$$suffix" \
-				build; \
+		$(XCODEBUILD) \
+			-workspace '$(WORKSPACE)' \
+			-scheme $(SCHEME) \
+			-configuration '$(CONFIG)' \
+			-destination "$$dest" \
+			-derivedDataPath "$(DERIVED_DATA)$$suffix" \
+			build; \
+		for framework in $(FRAMEWORK_NAMES) SwiftGodotRuntime; do \
 			if [ "$$platform_lc" = "ios" ] || [ "$$platform_lc" = "macos" ]; then \
 				relink_platform="$$platform_lc"; \
 				$(CURDIR)/relink_without_swiftsyntax.sh \
@@ -58,7 +58,7 @@ build:
 			else \
 				echo "Skipping SwiftSyntax relink for $$framework on $$dest (unsupported platform)"; \
 			fi; \
-	    done;  \
+		done; \
 	done; \
 
 check_swiftsyntax:
@@ -78,6 +78,30 @@ check_swiftsyntax:
 			echo "OK:   $$label"; \
 		fi; \
 	}; \
+	for framework in $(FRAMEWORK_NAMES) SwiftGodotRuntime; do \
+		check_one iphoneos "$(DERIVED_DATA)/Build/Products/$(CONFIG)-iphoneos/PackageFrameworks/$$framework.framework/$$framework" "iOS/$$framework"; \
+		check_one macosx "$(DERIVED_DATA)arm64/Build/Products/$(CONFIG)/PackageFrameworks/$$framework.framework/$$framework" "macOS arm64/$$framework"; \
+		check_one macosx "$(DERIVED_DATA)x86_64/Build/Products/$(CONFIG)/PackageFrameworks/$$framework.framework/$$framework" "macOS x86_64/$$framework"; \
+	done; \
+	test "$$failed" -eq 0
+
+check_no_runtime_symbols:
+	set -e; \
+	failed=0; \
+	check_one() { \
+		sdk="$$1"; bin="$$2"; label="$$3"; \
+		if [ ! -f "$$bin" ]; then \
+			echo "SKIP: $$label (missing: $$bin)"; \
+			return 0; \
+		fi; \
+		count=$$(xcrun --sdk "$$sdk" nm -gU "$$bin" 2>/dev/null | grep -c 'SwiftGodotRuntime' || true); \
+		if [ "$$count" -gt 0 ]; then \
+			echo "FAIL: $$label contains $$count SwiftGodotRuntime symbols (should be dynamically linked)"; \
+			failed=1; \
+		else \
+			echo "OK:   $$label (0 embedded SwiftGodotRuntime symbols)"; \
+		fi; \
+	}; \
 	for framework in $(FRAMEWORK_NAMES); do \
 		check_one iphoneos "$(DERIVED_DATA)/Build/Products/$(CONFIG)-iphoneos/PackageFrameworks/$$framework.framework/$$framework" "iOS/$$framework"; \
 		check_one macosx "$(DERIVED_DATA)arm64/Build/Products/$(CONFIG)/PackageFrameworks/$$framework.framework/$$framework" "macOS arm64/$$framework"; \
@@ -88,18 +112,18 @@ check_swiftsyntax:
 package: build dist
 
 dist:
-	for framework in $(FRAMEWORK_NAMES); do \
-		rm -rf $(CURDIR)/addons/$$framework/bin/$$framework.xcframework; \
-		rm -rf $(CURDIR)/addons/$$framework/bin/$$framework*.framework; \
+	for framework in $(FRAMEWORK_NAMES) SwiftGodotRuntime; do \
+		rm -rf $(CURDIR)/addons/GodotApplePlugins/bin/$$framework.xcframework; \
+		rm -rf $(CURDIR)/addons/GodotApplePlugins/bin/$$framework*.framework; \
 		$(XCODEBUILD) -create-xcframework \
 			-framework $(DERIVED_DATA)/Build/Products/$(CONFIG)-iphoneos/PackageFrameworks/$$framework.framework \
 			-framework $(DERIVED_DATA)simulator/Build/Products/$(CONFIG)-iphonesimulator/PackageFrameworks/$$framework.framework \
-			-output $(CURDIR)/addons/$$framework/bin/$${framework}.xcframework; \
-		rsync -a $(DERIVED_DATA)x86_64/Build/Products/$(CONFIG)/PackageFrameworks/$${framework}.framework/ $(CURDIR)/addons/$$framework/bin/$${framework}_x64.framework; \
-		rsync -a $(DERIVED_DATA)arm64/Build/Products/$(CONFIG)/PackageFrameworks/$${framework}.framework/ $(CURDIR)/addons/$$framework/bin/$${framework}.framework; \
-		rsync -a doc_classes/ $(CURDIR)/addons/$$framework/bin/$${framework}_x64.framework/Resources/doc_classes/; \
-		rsync -a doc_classes/ $(CURDIR)/addons/$$framework/bin/$${framework}.framework/Resources/doc_classes/; \
+			-output $(CURDIR)/addons/GodotApplePlugins/bin/$${framework}.xcframework; \
+		rsync -a $(DERIVED_DATA)x86_64/Build/Products/$(CONFIG)/PackageFrameworks/$${framework}.framework/ $(CURDIR)/addons/GodotApplePlugins/bin/$${framework}_x64.framework; \
+		rsync -a $(DERIVED_DATA)arm64/Build/Products/$(CONFIG)/PackageFrameworks/$${framework}.framework/ $(CURDIR)/addons/GodotApplePlugins/bin/$${framework}.framework; \
 	done
+	rsync -a doc_classes/ $(CURDIR)/addons/GodotApplePlugins/bin/GodotApplePlugins_x64.framework/Resources/doc_classes/
+	rsync -a doc_classes/ $(CURDIR)/addons/GodotApplePlugins/bin/GodotApplePlugins.framework/Resources/doc_classes/
 
 XCFRAMEWORK_GODOTAPPLEPLUGINS ?= $(CURDIR)/addons/GodotApplePlugins/bin/GodotApplePlugins.xcframework
 
@@ -116,7 +140,7 @@ gendocs: justgen
 # My hack is that I build on Xcode for Mac and iPad first, then I
 # iterate by just rebuilding in one platform, and then running
 # "make o" here over and over, and my Godot project already has a
-# symlink here, so I can test quickly on desktop against the Mac 
+# symlink here, so I can test quickly on desktop against the Mac
 # API.
 o:
 	rm -rf '$(XCFRAMEWORK_GODOTAPPLEPLUGINS)'; \
@@ -135,4 +159,4 @@ make oo:
 	$(XCODEBUILD) -create-xcframework \
 		-framework ~/DerivedData/GodotApplePlugins-*/Build/Products/Debug-iphoneos/PackageFrameworks/GodotApplePlugins.framework/ \
 		-framework ~/DerivedData/GodotApplePlugins-*/Build/Products/Debug/PackageFrameworks/GodotApplePlugins.framework/ \
-		-output '$(XCFRAMEWORK_EXPORT_PATH)'	
+		-output '$(XCFRAMEWORK_EXPORT_PATH)'
