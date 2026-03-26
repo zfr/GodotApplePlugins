@@ -9,4 +9,5 @@ linux.arm64 = "res://addons/GodotApplePlugins/bin/godot_apple_plugins_stub.linux
 linux.x86_64 = "res://addons/GodotApplePlugins/bin/godot_apple_plugins_stub.linux.x86_64.so"
 macos.arm64 = "res://addons/GodotApplePlugins/bin/GodotApplePlugins.framework"
 macos.x86_64 = "res://addons/GodotApplePlugins/bin/GodotApplePlugins_x64.framework"
+windows.arm64 = "res://addons/GodotApplePlugins/bin/godot_apple_plugins_stub.windows.arm64.dll"
 windows.x86_64 = "res://addons/GodotApplePlugins/bin/godot_apple_plugins_stub.windows.x86_64.dll"
