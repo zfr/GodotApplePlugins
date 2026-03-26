@@ -9,3 +9,4 @@
 test-apple-godot-api
 multi-demo
 #*
+.build-xcode/
