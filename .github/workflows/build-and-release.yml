@@ -142,19 +142,31 @@ jobs:
           MACOS_CERTIFICATE_PASSWORD: ${{ secrets.MACOS_CERTIFICATE_PASSWORD }}
           KEYCHAIN_PASSWORD: ${{ secrets.KEYCHAIN_PASSWORD }}
         run: |
+          set -euo pipefail
+
           # Create temporary keychain
-          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
-          security create-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
-          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
-          security unlock-keychain -p "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          KEYCHAIN_PATH="$RUNNER_TEMP/app-signing.keychain-db"
+          ORIGINAL_KEYCHAINS=$(
+            security list-keychains -d user |
+            tr -d '"' |
+            tr '\n' ' '
+          )
+          security create-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security set-keychain-settings -lut 21600 "$KEYCHAIN_PATH"
+          security unlock-keychain -p "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+          security list-keychains -d user -s "$KEYCHAIN_PATH" $ORIGINAL_KEYCHAINS
 
           # Import certificate
-          echo "$MACOS_CERTIFICATE" | base64 --decode > $RUNNER_TEMP/certificate.p12
-          security import $RUNNER_TEMP/certificate.p12 -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
-          security list-keychain -d user -s $KEYCHAIN_PATH
+          printf '%s' "$MACOS_CERTIFICATE" | base64 --decode > "$RUNNER_TEMP/certificate.p12"
+          security import "$RUNNER_TEMP/certificate.p12" -P "$MACOS_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k "$KEYCHAIN_PATH"
 
           # Allow codesign to access keychain
-          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-key-partition-list -S apple-tool:,apple:,codesign: -s -k "$KEYCHAIN_PASSWORD" "$KEYCHAIN_PATH"
+
+          {
+            echo "KEYCHAIN_PATH=$KEYCHAIN_PATH"
+            echo "ORIGINAL_KEYCHAINS=$ORIGINAL_KEYCHAINS"
+          } >> "$GITHUB_ENV"
 
       - name: Build xcframework package
         run: make build
@@ -191,19 +203,25 @@ jobs:
         env:
           MACOS_CERTIFICATE: ${{ secrets.MACOS_CERTIFICATE }}
         run: |
+          set -euo pipefail
+
           # Find signing identity from keychain (first code signing certificate)
-          SIGNING_IDENTITY=$(security find-identity -v -p codesigning | grep -o '"[^"]*"' | head -1 | tr -d '"')
+          SIGNING_IDENTITY=$(
+            security find-identity -v -p codesigning "$KEYCHAIN_PATH" |
+            awk -F'"' '/Developer ID Application/ { print $2; exit }'
+          )
+          test -n "$SIGNING_IDENTITY"
           echo "Using signing identity: $SIGNING_IDENTITY"
           
           # Sign all macOS frameworks
           for fw in addons/*/bin/*.framework; do
             if [[ -d "$fw" ]]; then
               echo "Signing $fw"
-              codesign --keychain $RUNNER_TEMP/app-signing.keychain-db --force --options runtime \
+              codesign --keychain "$KEYCHAIN_PATH" --force --options runtime \
                 --sign "$SIGNING_IDENTITY" \
-                $fw
-              echo "Verifying file $signfile"
-              codesign --keychain $RUNNER_TEMP/app-signing.keychain-db --verify --verbose $fw
+                "$fw"
+              echo "Verifying $fw"
+              codesign --keychain "$KEYCHAIN_PATH" --verify --verbose "$fw"
             fi
           done
 
@@ -237,3 +255,11 @@ jobs:
           name: Addons build for ${{ github.sha }}
           body: Automated build triggered by ${{ github.ref }}
           files: ${{ env.PACKAGE_NAME }}
+
+      - name: Clean up signing keychain
+        if: always() && env.KEYCHAIN_PATH != ''
+        run: |
+          security delete-keychain "$KEYCHAIN_PATH" || true
+          if [ -n "${ORIGINAL_KEYCHAINS:-}" ]; then
+            security list-keychains -d user -s $ORIGINAL_KEYCHAINS || true
+          fi
