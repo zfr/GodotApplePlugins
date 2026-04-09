@@ -23,7 +23,7 @@ This run used the full `doc_classes/*.xml` set.
 ## Files
 
 - `godot_apple_plugins_stub.c`: generated GDExtension implementation
-- `godot_apple_plugins_stub.h`: generated public header with entry symbol `godot_apple_plugins_stub_init`
+- `godot_apple_plugins_stub.h`: generated public header with entry symbol `godot_apple_plugins_start`
 - `Makefile`: minimal shared-library build scaffold
 
 ## Build
@@ -37,11 +37,11 @@ make GODOT_HEADERS_DIR=/path/to/godot-cpp/gdextension
 You can point the generator at another checkout directory instead of changing directories first.
 
 ```sh
-swift run GodotApplePluginsStubGenerator . --output Generated/GodotApplePluginsStub
+swift run GodotApplePluginsStubGenerator /Users/miguel/cvs/GodotApplePlugins --output /Users/miguel/cvs/GodotApplePlugins/Generated/GodotApplePluginsStub
 ```
 
 To generate a subset:
 
 ```sh
-swift run GodotApplePluginsStubGenerator . --file GKPlayer.xml --file GKLocalPlayer.xml --output Generated/GodotApplePluginsStub
+swift run GodotApplePluginsStubGenerator /Users/miguel/cvs/GodotApplePlugins --file GKPlayer.xml --file GKLocalPlayer.xml --output /Users/miguel/cvs/GodotApplePlugins/Generated/GodotApplePluginsStub
 ```

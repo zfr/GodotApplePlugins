@@ -4,7 +4,7 @@ struct Options {
     var baseDirectory: String = "."
     var docsPath: String = "doc_classes"
     var outputPath: String = "Generated/GodotApplePluginsStub"
-    var entrySymbol: String = "godot_apple_plugins_stub_init"
+    var entrySymbol: String = "godot_apple_plugins_start"
     var libraryBasename: String = "godot_apple_plugins_stub"
     var selectedFiles: [String] = []
 
@@ -90,7 +90,7 @@ struct Options {
       --files <a,b,c>        Comma-separated XML files or class names to include.
       --docs <path>          XML documentation directory. Default: doc_classes
       --output <path>        Output directory. Default: Generated/GodotApplePluginsStub
-      --entry-symbol <name>  GDExtension entry symbol. Default: godot_apple_plugins_stub_init
+      --entry-symbol <name>  GDExtension entry symbol. Default: godot_apple_plugins_start
       --library-name <name>  Basename for generated files/library. Default: godot_apple_plugins_stub
     """
 }

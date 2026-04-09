@@ -8174,7 +8174,7 @@ static GDExtensionBool gap_load_api(GDExtensionInterfaceGetProcAddress p_get_pro
 #pragma GCC diagnostic pop
 #endif
 
-GDExtensionBool godot_apple_plugins_stub_init(
+GDExtensionBool godot_apple_plugins_start(
     GDExtensionInterfaceGetProcAddress p_get_proc_address,
     GDExtensionClassLibraryPtr p_library,
     GDExtensionInitialization *r_initialization
