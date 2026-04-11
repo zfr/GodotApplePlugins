@@ -32,7 +32,7 @@
 		</method>
 	</methods>
 	<members>
-		<member name="identifier" type="String" setter="" getter="get_identifier" default="&quot;FF4B1614-C670-4C6F-A3E0-A5594EEB5C95&quot;">
+		<member name="identifier" type="String" setter="" getter="get_identifier" default="&quot;B0E76C0B-8037-4FC1-B7EC-12C174A10721&quot;">
 			A unique identifier for this anchor instance.
 		</member>
 		<member name="name" type="String" setter="" getter="get_name" default="&quot;&quot;">
