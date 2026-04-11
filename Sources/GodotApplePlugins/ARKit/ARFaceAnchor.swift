@@ -89,29 +89,17 @@ class ARFaceAnchor: RefCounted, @unchecked Sendable {
 
     @Export var geometryVertices: PackedVector3Array {
         guard let geometry = anchor?.geometry else { return PackedVector3Array() }
-        let vertices = UnsafeBufferPointer(
-            start: geometry.vertices,
-            count: geometry.vertexCount
-        )
-        return packedVector3Array(vertices)
+        return packedVector3Array(geometry.vertices)
     }
 
     @Export var geometryTextureCoordinates: PackedVector2Array {
         guard let geometry = anchor?.geometry else { return PackedVector2Array() }
-        let coordinates = UnsafeBufferPointer(
-            start: geometry.textureCoordinates,
-            count: geometry.textureCoordinateCount
-        )
-        return packedVector2Array(coordinates)
+        return packedVector2Array(geometry.textureCoordinates)
     }
 
     @Export var triangleIndices: PackedInt32Array {
         guard let geometry = anchor?.geometry else { return PackedInt32Array() }
-        let indices = UnsafeBufferPointer(
-            start: geometry.triangleIndices,
-            count: geometry.triangleCount * 3
-        )
-        return PackedInt32Array(indices.map(Int32.init))
+        return PackedInt32Array(geometry.triangleIndices.map(Int32.init))
     }
 
     @Export var leftEyeTransform: Transform3D {

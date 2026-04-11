@@ -44,7 +44,7 @@ class ARGeoAnchor: RefCounted, @unchecked Sendable {
 
     @Export var altitude: Double {
         guard let anchor else { return 0 }
-        return anchor.altitude
+        return anchor.altitude ?? 0
     }
 
     @Export(.enum) var altitudeSource: AltitudeSource {
@@ -140,7 +140,7 @@ class ARGeoTrackingConfiguration: RefCounted, @unchecked Sendable {
         configuration.isLightEstimationEnabled = isLightEstimationEnabled
         configuration.wantsHDREnvironmentTextures = wantsHDREnvironmentTextures
 
-        var planeDetection: ARKit.ARPlaneDetection = []
+        var planeDetection: ARKit.ARWorldTrackingConfiguration.PlaneDetection = []
         if planeDetectionMask & ARWorldTrackingConfiguration.PlaneDetection.HORIZONTAL.rawValue != 0 {
             planeDetection.insert(.horizontal)
         }

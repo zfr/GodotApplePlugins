@@ -132,6 +132,9 @@ jobs:
     permissions:
       contents: write
     steps:
+      - name: Disable keychain credential helper
+        run: git config --global credential.helper store
+
       - name: Checkout repository
         uses: actions/checkout@v4
 

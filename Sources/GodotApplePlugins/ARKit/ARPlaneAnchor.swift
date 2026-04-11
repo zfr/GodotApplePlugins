@@ -65,6 +65,13 @@ class ARPlaneAnchor: RefCounted, @unchecked Sendable {
 
     @Export var extent: Vector3 {
         guard let anchor else { return Vector3() }
+        if #available(iOS 16.0, *) {
+            return Vector3(
+                x: anchor.planeExtent.width,
+                y: 0,
+                z: anchor.planeExtent.height
+            )
+        }
         return godotVector3(anchor.extent)
     }
 
@@ -96,94 +103,66 @@ class ARPlaneAnchor: RefCounted, @unchecked Sendable {
             return .HORIZONTAL
         case .vertical:
             return .VERTICAL
-        case .slanted:
-            if #available(iOS 17.0, *) {
-                return .SLANTED
-            }
-            return .HORIZONTAL
         @unknown default:
             return .HORIZONTAL
         }
     }
 
     @Export(.enum) var classificationStatus: ClassificationStatus {
-        if #available(iOS 12.0, *) {
-            switch anchor?.classificationStatus ?? .notAvailable {
-            case .notAvailable:
-                return .NOT_AVAILABLE
-            case .undetermined:
-                return .UNDETERMINED
-            case .unknown:
-                return .UNKNOWN
-            case .known:
-                return .KNOWN
-            @unknown default:
-                return .NOT_AVAILABLE
-            }
+        guard #available(iOS 12.0, *), let anchor else { return .NOT_AVAILABLE }
+        guard Self.is_classification_supported() else { return .NOT_AVAILABLE }
+        switch anchor.classification {
+        case ARKit.ARPlaneAnchor.Classification.none:
+            return .UNKNOWN
+        case .wall, .floor, .ceiling, .table, .seat, .window, .door:
+            return .KNOWN
+        @unknown default:
+            return .UNKNOWN
         }
-        return .NOT_AVAILABLE
     }
 
     @Export(.enum) var classification: Classification {
-        if #available(iOS 12.0, *) {
-            switch anchor?.classification ?? .none {
-            case .none:
-                return .NONE
-            case .wall:
-                return .WALL
-            case .floor:
-                return .FLOOR
-            case .ceiling:
-                return .CEILING
-            case .table:
-                return .TABLE
-            case .seat:
-                return .SEAT
-            case .window:
-                return .WINDOW
-            case .door:
-                return .DOOR
-            @unknown default:
-                return .NONE
-            }
+        guard #available(iOS 12.0, *), let anchor else { return .NONE }
+        switch anchor.classification {
+        case ARKit.ARPlaneAnchor.Classification.none:
+            return .NONE
+        case .wall:
+            return .WALL
+        case .floor:
+            return .FLOOR
+        case .ceiling:
+            return .CEILING
+        case .table:
+            return .TABLE
+        case .seat:
+            return .SEAT
+        case .window:
+            return .WINDOW
+        case .door:
+            return .DOOR
+        @unknown default:
+            return .NONE
         }
-        return .NONE
     }
 
     @Export var boundaryVertices: PackedVector3Array {
         guard let geometry = anchor?.geometry else { return PackedVector3Array() }
-        let vertices = UnsafeBufferPointer(
-            start: geometry.boundaryVertices,
-            count: Int(geometry.boundaryVertexCount)
-        )
-        return packedVector3Array(vertices)
+        return packedVector3Array(geometry.boundaryVertices)
     }
 
     @Export var geometryVertices: PackedVector3Array {
         guard let geometry = anchor?.geometry else { return PackedVector3Array() }
-        let vertices = UnsafeBufferPointer(
-            start: geometry.vertices,
-            count: Int(geometry.vertexCount)
-        )
-        return packedVector3Array(vertices)
+        return packedVector3Array(geometry.vertices)
     }
 
     @Export var textureCoordinates: PackedVector2Array {
         guard let geometry = anchor?.geometry else { return PackedVector2Array() }
-        let coordinates = UnsafeBufferPointer(
-            start: geometry.textureCoordinates,
-            count: Int(geometry.textureCoordinateCount)
-        )
-        return packedVector2Array(coordinates)
+        return packedVector2Array(geometry.textureCoordinates)
     }
 
     @Export var triangleIndices: PackedInt32Array {
         guard let geometry = anchor?.geometry else { return PackedInt32Array() }
-        let indices = UnsafeBufferPointer(
-            start: geometry.triangleIndices,
-            count: Int(geometry.triangleCount) * 3
-        )
-        return PackedInt32Array(indices.map(Int32.init))
+        return PackedInt32Array(geometry.triangleIndices.map(Int32.init))
     }
 
     @Callable

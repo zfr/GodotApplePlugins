@@ -104,7 +104,7 @@ class ARWorldTrackingConfiguration: RefCounted, @unchecked Sendable {
         return false
     }
 
-    fileprivate func makeNative() -> ARKit.ARWorldTrackingConfiguration {
+    func makeNative() -> ARKit.ARWorldTrackingConfiguration {
         let configuration = ARKit.ARWorldTrackingConfiguration()
         configuration.worldAlignment = switch worldAlignment {
         case .GRAVITY: .gravity
@@ -158,8 +158,8 @@ class ARWorldTrackingConfiguration: RefCounted, @unchecked Sendable {
         return configuration
     }
 
-    private func makePlaneDetection() -> ARKit.ARPlaneDetection {
-        var result: ARKit.ARPlaneDetection = []
+    private func makePlaneDetection() -> ARKit.ARWorldTrackingConfiguration.PlaneDetection {
+        var result: ARKit.ARWorldTrackingConfiguration.PlaneDetection = []
         if planeDetectionMask & PlaneDetection.HORIZONTAL.rawValue != 0 {
             result.insert(.horizontal)
         }
@@ -171,10 +171,10 @@ class ARWorldTrackingConfiguration: RefCounted, @unchecked Sendable {
 }
 
 private extension ARWorldTrackingConfiguration.SceneReconstruction {
-    func toNative() -> ARKit.ARSceneReconstruction {
+    func toNative() -> ARKit.ARConfiguration.SceneReconstruction {
         switch self {
         case .NONE:
-            return .none
+            return []
         case .MESH:
             return .mesh
         case .MESH_WITH_CLASSIFICATION:

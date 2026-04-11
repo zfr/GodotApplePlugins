@@ -40,7 +40,7 @@ generate-stubs:
 	echo "Compiling stub library to $(STUB_SHARED_LIB)"; \
 	$(CC) -std=c11 -Wall -Wextra -I "$(STUB_HEADERS_DIR)" $(STUB_SHARED_FLAGS) "$(STUB_OUTPUT_DIR)/$(STUB_LIBRARY_NAME).c" -o "$(STUB_SHARED_LIB)"
 
-build:
+build build2:
 	set -e; \
 	swift build; \
 	for dest in $(DESTINATIONS); do \

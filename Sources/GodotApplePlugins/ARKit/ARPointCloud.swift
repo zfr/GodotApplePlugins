@@ -20,30 +20,28 @@ class ARPointCloud: RefCounted, @unchecked Sendable {
     }
 
     @Export var count: Int {
-        pointCloud.map { Int($0.count) } ?? 0
+        pointCloud?.points.count ?? 0
     }
 
     @Export var points: PackedVector3Array {
         guard let pointCloud else { return PackedVector3Array() }
-        let buffer = UnsafeBufferPointer(start: pointCloud.points, count: Int(pointCloud.count))
-        return packedVector3Array(buffer)
+        return packedVector3Array(pointCloud.points)
     }
 
     @Export var identifiers: PackedInt64Array {
         guard let pointCloud else { return PackedInt64Array() }
-        let buffer = UnsafeBufferPointer(start: pointCloud.identifiers, count: Int(pointCloud.count))
-        return PackedInt64Array(buffer.map(Int64.init))
+        return PackedInt64Array(pointCloud.identifiers.map(Int64.init))
     }
 
     @Callable
     func get_point(index: Int) -> Vector3 {
-        guard let pointCloud, index >= 0, index < Int(pointCloud.count) else { return Vector3() }
+        guard let pointCloud, index >= 0, index < pointCloud.points.count else { return Vector3() }
         return godotVector3(pointCloud.points[index])
     }
 
     @Callable
     func get_identifier(index: Int) -> Int {
-        guard let pointCloud, index >= 0, index < Int(pointCloud.count) else { return 0 }
+        guard let pointCloud, index >= 0, index < pointCloud.identifiers.count else { return 0 }
         return Int(bitPattern: UInt(pointCloud.identifiers[index]))
     }
 }

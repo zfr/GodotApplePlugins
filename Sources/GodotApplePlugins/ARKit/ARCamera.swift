@@ -110,12 +110,12 @@ class ARCamera: RefCounted, @unchecked Sendable {
         point: Vector2, ontoPlaneWithTransform: Transform3D, orientation: Int, viewportSize: Vector2
     ) -> Vector3 {
         guard let camera else { return Vector3() }
-        let unprojected = camera.unprojectPoint(
+        guard let unprojected = camera.unprojectPoint(
             cgPoint(point),
-            ontoPlaneWithTransform: simdTransform(ontoPlaneWithTransform),
+            ontoPlane: simdTransform(ontoPlaneWithTransform),
             orientation: uiInterfaceOrientation(orientation),
             viewportSize: cgSize(viewportSize)
-        )
+        ) else { return Vector3() }
         return godotVector3(unprojected)
     }
 
@@ -146,8 +146,6 @@ class ARCamera: RefCounted, @unchecked Sendable {
             return .NONE
         case let .limited(reason):
             switch reason {
-            case .none:
-                return .NONE
             case .initializing:
                 return .INITIALIZING
             case .excessiveMotion:

@@ -236,11 +236,13 @@ class ARSession: RefCounted, @unchecked Sendable {
     @Callable
     func get_current_world_map(callback: Callable) {
         session.getCurrentWorldMap { worldMap, error in
+            let wrappedWorldMap = worldMap.map { ARWorldMap(worldMap: $0) }
+            let mappedError = mapError(error)
             DispatchQueue.main.async {
-                if let worldMap {
-                    _ = callback.call(Variant(ARWorldMap(worldMap: worldMap)), mapError(error))
+                if let wrappedWorldMap {
+                    _ = callback.call(Variant(wrappedWorldMap), mappedError)
                 } else {
-                    _ = callback.call(nil, mapError(error))
+                    _ = callback.call(nil, mappedError)
                 }
             }
         }
@@ -272,10 +274,11 @@ class ARSession: RefCounted, @unchecked Sendable {
         guard let nativeQuery = query.query else { return nil }
         let wrapper = ARTrackedRaycast()
         wrapper.trackedRaycast = session.trackedRaycast(nativeQuery) { results in
+            let wrappedResults = results.map { ARRaycastResult(result: $0) }
             DispatchQueue.main.async {
                 let array = VariantArray()
-                for result in results {
-                    array.append(Variant(ARRaycastResult(result: result)))
+                for result in wrappedResults {
+                    array.append(Variant(result))
                 }
                 _ = callback.call(Variant(array))
             }

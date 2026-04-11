@@ -14,30 +14,34 @@ import ARKit
 class ARBodySkeleton: RefCounted, @unchecked Sendable {
     var skeleton: ARKit.ARSkeleton3D?
 
+    private var jointCountValue: Int {
+        skeleton?.definition.jointNames.count ?? 0
+    }
+
     convenience init(skeleton: ARKit.ARSkeleton3D) {
         self.init()
         self.skeleton = skeleton
     }
 
     @Export var jointCount: Int {
-        skeleton?.jointCount ?? 0
+        jointCountValue
     }
 
     @Callable
     func get_joint_name(index: Int) -> String {
-        guard let skeleton, index >= 0, index < skeleton.jointCount else { return "" }
+        guard index >= 0, index < jointCountValue else { return "" }
         return ARKit.ARSkeletonDefinition.defaultBody3D.jointNames[index]
     }
 
     @Callable
     func get_joint_transform(index: Int) -> Transform3D {
-        guard let skeleton, index >= 0, index < skeleton.jointCount else { return Transform3D() }
+        guard let skeleton, index >= 0, index < jointCountValue else { return Transform3D() }
         return godotTransform3D(skeleton.jointModelTransforms[index])
     }
 
     @Callable
     func get_joint_is_tracked(index: Int) -> Bool {
-        guard let skeleton, index >= 0, index < skeleton.jointCount else { return false }
+        guard let skeleton, index >= 0, index < jointCountValue else { return false }
         return skeleton.isJointTracked(index)
     }
 }

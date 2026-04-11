@@ -118,6 +118,10 @@ func packedVector3Array(_ values: UnsafeBufferPointer<SIMD3<Float>>) -> PackedVe
     PackedVector3Array(Array(values).map(godotVector3))
 }
 
+func packedVector2Array(_ values: [SIMD2<Float>]) -> PackedVector2Array {
+    PackedVector2Array(values.map { Vector2(x: $0.x, y: $0.y) })
+}
+
 func packedVector2Array(_ values: UnsafeBufferPointer<SIMD2<Float>>) -> PackedVector2Array {
     PackedVector2Array(Array(values).map { Vector2(x: $0.x, y: $0.y) })
 }

@@ -86,7 +86,7 @@ class ARFrame: RefCounted, @unchecked Sendable {
     func get_anchor(index: Int) -> RefCounted? {
         guard let frame, index >= 0, index < frame.anchors.count else { return nil }
         let variant = wrapAnchor(frame.anchors[index])
-        return RefCounted(variant)
+        return variant.asObject(RefCounted.self)
     }
 
     @Callable

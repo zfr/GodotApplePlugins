@@ -73,16 +73,16 @@ class ARMeshAnchor: RefCounted, @unchecked Sendable {
         guard let geometry = anchor?.geometry else { return PackedInt32Array() }
         let faces = geometry.faces
         let totalIndexCount = faces.count * faces.indexCountPerPrimitive
-        let baseAddress = faces.buffer.contents().advanced(by: faces.offset)
+        let baseAddress = faces.buffer.contents()
         switch faces.bytesPerIndex {
         case 2:
-            let indices = UnsafeBufferPointer(
+            let indices = UnsafeBufferPointer<UInt16>(
                 start: baseAddress.assumingMemoryBound(to: UInt16.self),
                 count: totalIndexCount
             )
             return PackedInt32Array(indices.map(Int32.init))
         case 4:
-            let indices = UnsafeBufferPointer(
+            let indices = UnsafeBufferPointer<UInt32>(
                 start: baseAddress.assumingMemoryBound(to: UInt32.self),
                 count: totalIndexCount
             )
