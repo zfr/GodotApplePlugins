@@ -439,9 +439,7 @@ class ARSession: RefCounted, @unchecked Sendable {
                     try? await worldTrackingProvider.removeAllAnchors()
                 }
             } catch {
-                await MainActor.run {
-                    self.session_failed.emit(error.localizedDescription)
-                }
+                await self.emitSessionFailedOnMainActor(error.localizedDescription)
             }
         }
     }
@@ -495,8 +493,8 @@ class ARSession: RefCounted, @unchecked Sendable {
             do {
                 try await provider.addAnchor(nativeAnchor)
             } catch {
-                await MainActor.run {
-                    self?.session_failed.emit(error.localizedDescription)
+                if let self {
+                    await self.emitSessionFailedOnMainActor(error.localizedDescription)
                 }
             }
         }
@@ -511,8 +509,8 @@ class ARSession: RefCounted, @unchecked Sendable {
                 do {
                     try await provider.removeAnchor(nativeAnchor)
                 } catch {
-                    await MainActor.run {
-                        self?.session_failed.emit(error.localizedDescription)
+                    if let self {
+                        await self.emitSessionFailedOnMainActor(error.localizedDescription)
                     }
                 }
             }
@@ -524,8 +522,8 @@ class ARSession: RefCounted, @unchecked Sendable {
             do {
                 try await provider.removeAnchor(forID: identifier)
             } catch {
-                await MainActor.run {
-                    self?.session_failed.emit(error.localizedDescription)
+                if let self {
+                    await self.emitSessionFailedOnMainActor(error.localizedDescription)
                 }
             }
         }
@@ -540,8 +538,8 @@ class ARSession: RefCounted, @unchecked Sendable {
                 do {
                     try await provider.removeAllAnchors()
                 } catch {
-                    await MainActor.run {
-                        self?.session_failed.emit(error.localizedDescription)
+                    if let self {
+                        await self.emitSessionFailedOnMainActor(error.localizedDescription)
                     }
                 }
                 return
@@ -828,6 +826,11 @@ class ARSession: RefCounted, @unchecked Sendable {
         }
     }
 
+    @MainActor
+    private func emitSessionFailedOnMainActor(_ message: String) {
+        session_failed.emit(message)
+    }
+
     private func currentAnchors() -> [RefCounted] {
         let worldAnchors = worldAnchorsByIdentifier.keys.sorted(by: { $0.uuidString < $1.uuidString }).compactMap {
             worldAnchorsByIdentifier[$0].map { ARAnchor(anchor: $0) as RefCounted }
@@ -975,8 +978,8 @@ class ARSession: RefCounted, @unchecked Sendable {
                 try await session.run([worldTrackingProvider])
                 await self?.startMacTasks(session: session, worldTrackingProvider: worldTrackingProvider)
             } catch {
-                _ = await MainActor.run {
-                    self?.session_failed.emit(error.localizedDescription)
+                if let self {
+                    await self.emitSessionFailedOnMainActor(error.localizedDescription)
                 }
             }
         }
@@ -1092,9 +1095,7 @@ class ARSession: RefCounted, @unchecked Sendable {
         switch event {
         case let .dataProviderStateChanged(_, _, error):
             if let error {
-                _ = await MainActor.run {
-                    session_failed.emit(error.localizedDescription)
-                }
+                await emitSessionFailedOnMainActor(error.localizedDescription)
             }
         @unknown default:
             break
@@ -1119,6 +1120,11 @@ class ARSession: RefCounted, @unchecked Sendable {
             camera_tracking_changed.emit(camera)
             frame_updated.emit(frame)
         }
+    }
+
+    @MainActor
+    private func emitSessionFailedOnMainActor(_ message: String) {
+        session_failed.emit(message)
     }
 
     private func currentAnchors() -> [RefCounted] {
