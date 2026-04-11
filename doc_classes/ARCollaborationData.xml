@@ -1,5 +1,5 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="ARCollaborationData" inherits="RefCounted" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ARCollaborationData" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
 		Collaboration data for multi-peer AR sessions.
 	</brief_description>
@@ -12,18 +12,28 @@
 		<method name="deserialize" qualifiers="static">
 			<return type="ARCollaborationData" />
 			<param index="0" name="data" type="PackedByteArray" />
-			<description>Creates an [ARCollaborationData] instance from serialized network data.</description>
+			<description>
+				Creates an [ARCollaborationData] instance from serialized network data.
+			</description>
 		</method>
 		<method name="serialize">
 			<return type="PackedByteArray" />
-			<description>Serializes this collaboration packet into a [PackedByteArray] so it can be sent to another peer.</description>
+			<description>
+				Serializes this collaboration packet into a [PackedByteArray] so it can be sent to another peer.
+			</description>
 		</method>
 	</methods>
 	<members>
-		<member name="priority" type="int" setter="set_priority" getter="get_priority" default="1">Indicates whether this collaboration packet is optional or critical to session convergence.</member>
+		<member name="priority" type="int" setter="set_priority" getter="get_priority" default="1">
+			Indicates whether this collaboration packet is optional or critical to session convergence.
+		</member>
 	</members>
 	<constants>
-		<constant name="CRITICAL" value="0" enum="Priority">This packet is essential for accurate shared-session synchronization.</constant>
-		<constant name="OPTIONAL" value="1" enum="Priority">This packet improves shared-session quality but may be dropped if needed.</constant>
+		<constant name="CRITICAL" value="0" enum="Priority">
+			This packet is essential for accurate shared-session synchronization.
+		</constant>
+		<constant name="OPTIONAL" value="1" enum="Priority">
+			This packet improves shared-session quality but may be dropped if needed.
+		</constant>
 	</constants>
 </class>

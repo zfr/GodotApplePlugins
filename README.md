@@ -98,7 +98,13 @@ make -C doctools html GODOT_DOCS_SOURCE=/path/to/godot/doc/classes
 make -C doctools html GODOT_DOCS_SOURCE=/path/to/godot/doc/classes HTML_OUTPUT=../site
 ```
 
-GitHub Pages deployment is handled by the `Deploy Docs` workflow on pushes to `main`; the repository Pages source should be set to `GitHub Actions`.
+To publish the generated docs to the `docs` branch without switching your current checkout, run:
+
+```sh
+make deploy-docs
+```
+
+This builds the site into a temporary directory, updates the `docs/` folder on the `docs` branch through a temporary `git worktree`, commits only when the generated output changed, and pushes to `origin/docs`. The repository Pages source should be set to the `docs` branch and the `/docs` folder.
 
 # API Design
 

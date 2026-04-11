@@ -1,5 +1,5 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="ARHandAnchor" inherits="RefCounted" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ARHandAnchor" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
 		Represents a tracked hand with skeletal joint data.
 	</brief_description>
@@ -9,14 +9,28 @@
 	<tutorials>
 	</tutorials>
 	<members>
-		<member name="chirality" type="int" setter="set_chirality" getter="get_chirality" default="0">Which hand this anchor represents. See [enum Chirality].</member>
-		<member name="identifier" type="String" setter="set_identifier" getter="get_identifier" default="&quot;&quot;">A unique identifier for this hand anchor.</member>
-		<member name="is_tracked" type="bool" setter="set_is_tracked" getter="get_is_tracked" default="false">Whether the hand currently has reliable tracking data.</member>
-		<member name="skeleton" type="ARHandSkeleton" setter="set_skeleton" getter="get_skeleton" default="null">The tracked hand skeleton, if available.</member>
-		<member name="transform" type="Transform3D" setter="set_transform" getter="get_transform" default="Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)">The hand anchor transform in world space.</member>
+		<member name="chirality" type="int" setter="set_chirality" getter="get_chirality" default="0">
+			Which hand this anchor represents. See [enum Chirality].
+		</member>
+		<member name="identifier" type="String" setter="set_identifier" getter="get_identifier" default="&quot;&quot;">
+			A unique identifier for this hand anchor.
+		</member>
+		<member name="is_tracked" type="bool" setter="set_is_tracked" getter="get_is_tracked" default="false">
+			Whether the hand currently has reliable tracking data.
+		</member>
+		<member name="skeleton" type="ARHandSkeleton" setter="set_skeleton" getter="get_skeleton" default="null">
+			The tracked hand skeleton, if available.
+		</member>
+		<member name="transform" type="Transform3D" setter="set_transform" getter="get_transform" default="Transform3D(1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0)">
+			The hand anchor transform in world space.
+		</member>
 	</members>
 	<constants>
-		<constant name="LEFT" value="0" enum="Chirality">The anchor represents the left hand.</constant>
-		<constant name="RIGHT" value="1" enum="Chirality">The anchor represents the right hand.</constant>
+		<constant name="LEFT" value="0" enum="Chirality">
+			The anchor represents the left hand.
+		</constant>
+		<constant name="RIGHT" value="1" enum="Chirality">
+			The anchor represents the right hand.
+		</constant>
 	</constants>
 </class>

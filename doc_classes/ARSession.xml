@@ -1,5 +1,5 @@
-<?xml version='1.0' encoding='UTF-8'?>
-<class xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" name="ARSession" inherits="RefCounted" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
+<?xml version="1.0" encoding="UTF-8" ?>
+<class name="ARSession" inherits="RefCounted" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="https://raw.githubusercontent.com/godotengine/godot/master/doc/class.xsd">
 	<brief_description>
 		Manages an AR session with world tracking, plane detection, and anchor management.
 	</brief_description>
@@ -16,7 +16,9 @@
 		<method name="add_anchor">
 			<return type="void" />
 			<param index="0" name="anchor" type="ARAnchor" />
-			<description>Adds a custom anchor to the running session.</description>
+			<description>
+				Adds a custom anchor to the running session.
+			</description>
 		</method>
 		<method name="capture_high_resolution_frame">
 			<return type="void" />
@@ -34,11 +36,15 @@
 		</method>
 		<method name="is_supported" qualifiers="static">
 			<return type="bool" />
-			<description>Returns [code]true[/code] when ARKit session support is available on the current platform and device.</description>
+			<description>
+				Returns [code]true[/code] when ARKit session support is available on the current platform and device.
+			</description>
 		</method>
 		<method name="pause">
 			<return type="void" />
-			<description>Pauses the session and stops delivering new frame updates until it is run again.</description>
+			<description>
+				Pauses the session and stops delivering new frame updates until it is run again.
+			</description>
 		</method>
 		<method name="raycast">
 			<return type="Array" />
@@ -49,18 +55,24 @@
 		</method>
 		<method name="remove_all_anchors">
 			<return type="void" />
-			<description>Removes every current anchor from the session.</description>
+			<description>
+				Removes every current anchor from the session.
+			</description>
 		</method>
 		<method name="remove_anchor">
 			<return type="void" />
 			<param index="0" name="anchor" type="ARAnchor" />
-			<description>Removes the given anchor from the session.</description>
+			<description>
+				Removes the given anchor from the session.
+			</description>
 		</method>
 		<method name="run">
 			<return type="void" />
 			<param index="0" name="configuration" type="ARWorldTrackingConfiguration" />
 			<param index="1" name="options" type="int" />
-			<description>Starts or reconfigures the session using [param configuration]. [param options] is a bitmask of [enum RunOption] flags.</description>
+			<description>
+				Starts or reconfigures the session using [param configuration]. [param options] is a bitmask of [enum RunOption] flags.
+			</description>
 		</method>
 		<method name="run_body_tracking">
 			<return type="void" />
@@ -78,22 +90,6 @@
 				Starts the session with geo tracking for GPS-anchored AR. [b]iOS 14+ only.[/b] Reports unavailability on visionOS/macOS.
 			</description>
 		</method>
-		<method name="run_face_tracking">
-			<return type="void" />
-			<param index="0" name="configuration" type="ARFaceTrackingConfiguration" />
-			<param index="1" name="options" type="int" />
-			<description>
-				Starts the session with front-camera face tracking. Delivers [ARFaceAnchor] results through anchor signals. [b]iOS only.[/b] Reports unavailability on visionOS/macOS.
-			</description>
-		</method>
-		<method name="run_image_tracking">
-			<return type="void" />
-			<param index="0" name="configuration" type="ARImageTrackingConfiguration" />
-			<param index="1" name="options" type="int" />
-			<description>
-				Starts the session with standalone image tracking (no world tracking). Delivers [ARImageAnchor] results through anchor signals. [b]iOS only.[/b] On visionOS, use [ARWorldTrackingConfiguration] with [code]detectionImageGroupName[/code] instead. Reports unavailability on macOS.
-			</description>
-		</method>
 		<method name="run_with_world_map">
 			<return type="void" />
 			<param index="0" name="configuration" type="ARWorldTrackingConfiguration" />
@@ -105,7 +101,9 @@
 		<method name="set_world_origin">
 			<return type="void" />
 			<param index="0" name="relativeTransform" type="Transform3D" />
-			<description>Resets the session's world origin relative to [param relativeTransform]. Use this to realign virtual content without recreating anchors.</description>
+			<description>
+				Resets the session's world origin relative to [param relativeTransform]. Use this to realign virtual content without recreating anchors.
+			</description>
 		</method>
 		<method name="tracked_raycast">
 			<return type="ARTrackedRaycast" />
@@ -124,27 +122,43 @@
 		</method>
 	</methods>
 	<members>
-		<member name="anchors" type="Array" setter="" getter="get_anchors" default="[]">The anchors currently known to the session.</member>
-		<member name="configuration" type="ARWorldTrackingConfiguration" setter="" getter="get_configuration" default="null">The last world-tracking configuration used with [method run] or [method run_with_world_map], if any.</member>
-		<member name="current_frame" type="ARFrame" setter="" getter="get_current_frame" default="null">The most recent frame produced by the session, if available.</member>
-		<member name="identifier" type="String" setter="" getter="get_identifier" default="&quot;F40F6F5C-3957-44A4-B585-386F2C54D346&quot;">A unique identifier for this session instance.</member>
+		<member name="anchors" type="Array" setter="" getter="get_anchors" default="[]">
+			The anchors currently known to the session.
+		</member>
+		<member name="configuration" type="ARWorldTrackingConfiguration" setter="" getter="get_configuration" default="null">
+			The last world-tracking configuration used with [method run] or [method run_with_world_map], if any.
+		</member>
+		<member name="current_frame" type="ARFrame" setter="" getter="get_current_frame" default="null">
+			The most recent frame produced by the session, if available.
+		</member>
+		<member name="identifier" type="String" setter="" getter="get_identifier" default="&quot;54DFCEE3-D21A-4DC5-85C6-A29A0740CAF5&quot;">
+			A unique identifier for this session instance.
+		</member>
 	</members>
 	<signals>
 		<signal name="anchors_added">
 			<param index="0" name="anchors" type="Array" />
-			<description>Emitted when new anchors are added to the session.</description>
+			<description>
+				Emitted when new anchors are added to the session.
+			</description>
 		</signal>
 		<signal name="anchors_removed">
 			<param index="0" name="anchors" type="Array" />
-			<description>Emitted when anchors are removed from the session.</description>
+			<description>
+				Emitted when anchors are removed from the session.
+			</description>
 		</signal>
 		<signal name="anchors_updated">
 			<param index="0" name="anchors" type="Array" />
-			<description>Emitted when existing anchors receive updated pose or geometry data.</description>
+			<description>
+				Emitted when existing anchors receive updated pose or geometry data.
+			</description>
 		</signal>
 		<signal name="camera_tracking_changed">
 			<param index="0" name="camera" type="ARCamera" />
-			<description>Emitted when the camera tracking state changes.</description>
+			<description>
+				Emitted when the camera tracking state changes.
+			</description>
 		</signal>
 		<signal name="collaboration_data_received">
 			<param index="0" name="collaborationData" type="ARCollaborationData" />
@@ -154,7 +168,9 @@
 		</signal>
 		<signal name="frame_updated">
 			<param index="0" name="frame" type="ARFrame" />
-			<description>Emitted whenever the session produces a new frame.</description>
+			<description>
+				Emitted whenever the session produces a new frame.
+			</description>
 		</signal>
 		<signal name="hand_anchor_updated">
 			<param index="0" name="hand" type="ARHandAnchor" />
@@ -163,32 +179,52 @@
 			</description>
 		</signal>
 		<signal name="interruption_ended">
-			<description>Emitted after the session interruption has ended and tracking can resume.</description>
+			<description>
+				Emitted after the session interruption has ended and tracking can resume.
+			</description>
 		</signal>
 		<signal name="mesh_anchor_added">
 			<param index="0" name="mesh" type="ARMeshAnchor" />
-			<description>Emitted when scene reconstruction produces a new mesh anchor.</description>
+			<description>
+				Emitted when scene reconstruction produces a new mesh anchor.
+			</description>
 		</signal>
 		<signal name="mesh_anchor_removed">
 			<param index="0" name="mesh" type="ARMeshAnchor" />
-			<description>Emitted when a reconstructed mesh anchor is removed.</description>
+			<description>
+				Emitted when a reconstructed mesh anchor is removed.
+			</description>
 		</signal>
 		<signal name="mesh_anchor_updated">
 			<param index="0" name="mesh" type="ARMeshAnchor" />
-			<description>Emitted when a reconstructed mesh anchor changes geometry or pose.</description>
+			<description>
+				Emitted when a reconstructed mesh anchor changes geometry or pose.
+			</description>
 		</signal>
 		<signal name="session_failed">
 			<param index="0" name="message" type="String" />
-			<description>Emitted when the session fails and provides a human-readable error message.</description>
+			<description>
+				Emitted when the session fails and provides a human-readable error message.
+			</description>
 		</signal>
 		<signal name="session_interrupted">
-			<description>Emitted when the session is interrupted by the system.</description>
+			<description>
+				Emitted when the session is interrupted by the system.
+			</description>
 		</signal>
 	</signals>
 	<constants>
-		<constant name="RESET_TRACKING" value="1" enum="RunOption">Reset session tracking when the configuration is run.</constant>
-		<constant name="REMOVE_EXISTING_ANCHORS" value="2" enum="RunOption">Remove existing anchors when the configuration is run.</constant>
-		<constant name="STOP_TRACKED_RAYCASTS" value="4" enum="RunOption">Stop existing tracked raycasts when the configuration is run.</constant>
-		<constant name="RESET_SCENE_RECONSTRUCTION" value="8" enum="RunOption">Reset accumulated scene-reconstruction data when the configuration is run.</constant>
+		<constant name="RESET_TRACKING" value="1" enum="RunOption">
+			Reset session tracking when the configuration is run.
+		</constant>
+		<constant name="REMOVE_EXISTING_ANCHORS" value="2" enum="RunOption">
+			Remove existing anchors when the configuration is run.
+		</constant>
+		<constant name="STOP_TRACKED_RAYCASTS" value="4" enum="RunOption">
+			Stop existing tracked raycasts when the configuration is run.
+		</constant>
+		<constant name="RESET_SCENE_RECONSTRUCTION" value="8" enum="RunOption">
+			Reset accumulated scene-reconstruction data when the configuration is run.
+		</constant>
 	</constants>
 </class>

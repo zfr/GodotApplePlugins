@@ -1,4 +1,4 @@
-.PHONY: run xcframework check_swiftsyntax generate-stubs
+.PHONY: run xcframework check_swiftsyntax generate-stubs gendocs docs-html deploy-docs
 
 # Allow overriding common build knobs.
 CONFIG ?= Release
@@ -129,13 +129,42 @@ dist:
 	done
 
 XCFRAMEWORK_GODOTAPPLEPLUGINS ?= $(CURDIR)/addons/GodotApplePlugins/bin/GodotApplePlugins.xcframework
+DOCS_REMOTE ?= origin
+DOCS_BRANCH ?= docs
+DOCS_DEPLOY_DIR ?= docs
 
 justgen:
 	(cd test-apple-godot-api; ~/cvs/master-godot/editor/bin/godot.macos.editor.dev.arm64 --headless --path . --doctool .. --gdextension-docs)
 
-gendocs: justgen
+gendocs docs-html: justgen
 	./fix_doc_enums.sh
-	$(MAKE) -C doctools html
+	$(MAKE) -C doctools html $(if $(GODOT_DOCS_SOURCE),GODOT_DOCS_SOURCE="$(GODOT_DOCS_SOURCE)") $(if $(HTML_OUTPUT),HTML_OUTPUT="$(HTML_OUTPUT)")
+
+deploy-docs:
+	@set -eu; \
+	site_dir="$$(mktemp -d "$${TMPDIR:-/tmp}/godotappleplugins-site.XXXXXX")"; \
+	worktree_dir="$$(mktemp -d "$${TMPDIR:-/tmp}/godotappleplugins-worktree.XXXXXX")"; \
+	cleanup() { \
+		git worktree remove --force "$$worktree_dir" >/dev/null 2>&1 || true; \
+		rm -rf "$$site_dir" "$$worktree_dir"; \
+	}; \
+	trap cleanup EXIT INT TERM; \
+	$(MAKE) docs-html HTML_OUTPUT="$$site_dir" $(if $(GODOT_DOCS_SOURCE),GODOT_DOCS_SOURCE="$(GODOT_DOCS_SOURCE)"); \
+	git fetch "$(DOCS_REMOTE)" "$(DOCS_BRANCH)" >/dev/null 2>&1 || true; \
+	if ! git rev-parse --verify --quiet "$(DOCS_REMOTE)/$(DOCS_BRANCH)" >/dev/null; then \
+		echo "Missing branch $(DOCS_REMOTE)/$(DOCS_BRANCH)"; \
+		exit 1; \
+	fi; \
+	git worktree add --detach "$$worktree_dir" "$(DOCS_REMOTE)/$(DOCS_BRANCH)"; \
+	mkdir -p "$$worktree_dir/$(DOCS_DEPLOY_DIR)"; \
+	rsync -a --delete "$$site_dir"/ "$$worktree_dir/$(DOCS_DEPLOY_DIR)/"; \
+	if [ -z "$$(git -C "$$worktree_dir" status --short -- "$(DOCS_DEPLOY_DIR)")" ]; then \
+		echo "No docs changes to publish."; \
+		exit 0; \
+	fi; \
+	git -C "$$worktree_dir" add "$(DOCS_DEPLOY_DIR)"; \
+	git -C "$$worktree_dir" commit -m "Update generated docs for $$(git rev-parse --short HEAD)"; \
+	git -C "$$worktree_dir" push "$(DOCS_REMOTE)" HEAD:refs/heads/$(DOCS_BRANCH)
 
 #
 # Quick hacks I use for rapid iteration

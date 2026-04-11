@@ -27,7 +27,7 @@
 			<param index="0" name="request" type="GKMatchRequest" />
 			<param index="1" name="callback" type="Callable" />
 			<description>
-				Shows turn-based matchmaking UI and returns the result through [code]callback[/code]. The callback receives [code](GKTurnBasedMatch match, Variant error)[/code]. On failure or cancel, [code]match[/code] is [code]null[/code] and [code]error[/code] contains a [code skip-lint]GKError[/code].
+				Shows turn-based matchmaking UI and returns the result through [code skip-lint]callback[/code]. The callback receives [code](GKTurnBasedMatch match, Variant error)[/code]. On failure or cancel, [code]match[/code] is [code]null[/code] and [code]error[/code] contains a [code skip-lint]GKError[/code].
 			</description>
 		</method>
 	</methods>

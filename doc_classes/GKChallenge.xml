@@ -48,25 +48,25 @@
 	</members>
 	<constants>
 		<constant name="INVALID" value="0" enum="ChallengeState">
-			Invalid or unknown challenge state.
+			The challenge is invalid or no longer available.
 		</constant>
 		<constant name="PENDING" value="1" enum="ChallengeState">
-			The challenge is active and waiting for completion.
+			The challenge has been issued and is waiting for completion.
 		</constant>
 		<constant name="COMPLETED" value="2" enum="ChallengeState">
-			The challenge was completed.
+			The receiving player completed the challenge.
 		</constant>
 		<constant name="DECLINED" value="3" enum="ChallengeState">
-			The challenge was declined.
+			The receiving player declined the challenge.
 		</constant>
 		<constant name="SCORE" value="0" enum="ChallengeType">
-			Score-based challenge ([GKScoreChallenge]).
+			A score-based challenge backed by [code skip-lint]GKScoreChallenge[/code].
 		</constant>
 		<constant name="ACHIEVEMENT" value="1" enum="ChallengeType">
-			Achievement-based challenge ([GKAchievementChallenge]).
+			An achievement-based challenge backed by [code skip-lint]GKAchievementChallenge[/code].
 		</constant>
 		<constant name="UNKNOWN" value="2" enum="ChallengeType">
-			Challenge type is not recognized by this plugin version.
+			A challenge payload type that this wrapper does not recognize.
 		</constant>
 	</constants>
 </class>
