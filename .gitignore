@@ -9,3 +9,8 @@
 test-apple-godot-api
 multi-demo
 #*
+GodotApplePackage.xcodeproj
+GodotApplePlugins.xcframework
+GodotApplePlugins.xcodeproj
+UnityGameKit
+addons/GodotApplePlugins/bin/

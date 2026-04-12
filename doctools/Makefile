@@ -27,3 +27,4 @@ run:
 
 html: run
 	sphinx-build -b html -c . "$(RST_OUTPUT)" "$(HTML_OUTPUT)"
+	touch "$(HTML_OUTPUT)/.nojekyll"
