@@ -13,7 +13,7 @@
 extern "C" {
 #endif
 
-GAP_STUB_EXPORT GDExtensionBool godot_apple_plugins_stub_init(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization);
+GAP_STUB_EXPORT GDExtensionBool godot_apple_plugins_start(GDExtensionInterfaceGetProcAddress p_get_proc_address, GDExtensionClassLibraryPtr p_library, GDExtensionInitialization *r_initialization);
 
 #ifdef __cplusplus
 }

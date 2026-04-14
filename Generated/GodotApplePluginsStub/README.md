@@ -8,11 +8,11 @@ This run used the full `doc_classes/*.xml` set.
 
 ## Generated Surface
 
-- Classes: 54
-- Methods: 464
-- Members: 227
-- Signals: 49
-- Integer constants: 155
+- Classes: 79
+- Methods: 772
+- Members: 360
+- Signals: 63
+- Integer constants: 318
 
 ## Behavior
 
@@ -23,7 +23,7 @@ This run used the full `doc_classes/*.xml` set.
 ## Files
 
 - `godot_apple_plugins_stub.c`: generated GDExtension implementation
-- `godot_apple_plugins_stub.h`: generated public header with entry symbol `godot_apple_plugins_stub_init`
+- `godot_apple_plugins_stub.h`: generated public header with entry symbol `godot_apple_plugins_start`
 - `Makefile`: minimal shared-library build scaffold
 
 ## Build

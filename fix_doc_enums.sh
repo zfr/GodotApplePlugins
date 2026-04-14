@@ -38,6 +38,53 @@ TYPE_ALIASES = {
     "GKMatchRequest": {"MatchType"},
 }
 
+ENUM_CONSTANT_PATCHES = {
+    "GKChallenge": [
+        (
+            "INVALID",
+            "0",
+            "ChallengeState",
+            "The challenge is invalid or no longer available.",
+        ),
+        (
+            "PENDING",
+            "1",
+            "ChallengeState",
+            "The challenge has been issued and is waiting for completion.",
+        ),
+        (
+            "COMPLETED",
+            "2",
+            "ChallengeState",
+            "The receiving player completed the challenge.",
+        ),
+        (
+            "DECLINED",
+            "3",
+            "ChallengeState",
+            "The receiving player declined the challenge.",
+        ),
+        (
+            "SCORE",
+            "0",
+            "ChallengeType",
+            "A score-based challenge backed by [code skip-lint]GKScoreChallenge[/code].",
+        ),
+        (
+            "ACHIEVEMENT",
+            "1",
+            "ChallengeType",
+            "An achievement-based challenge backed by [code skip-lint]GKAchievementChallenge[/code].",
+        ),
+        (
+            "UNKNOWN",
+            "2",
+            "ChallengeType",
+            "A challenge payload type that this wrapper does not recognize.",
+        ),
+    ],
+}
+
 SIGNAL_PARAM_RENAMES = {
     "ASAuthorizationController": {
         "authorization_completed": {0: "credential"},
@@ -52,6 +99,7 @@ SIGNAL_PARAM_RENAMES = {
 }
 
 LOWER_SKIP = {
+    "callback",
     "classic",
     "recurring",
     "unknown",
@@ -157,6 +205,27 @@ def sanitize_gkerror_refs(text: str) -> tuple[str, bool]:
     return new_text, new_text != text
 
 
+def ensure_constants(text: str, class_name: str) -> tuple[str, bool]:
+    constants = ENUM_CONSTANT_PATCHES.get(class_name)
+    if not constants:
+        return text, False
+    if "<constant name=" in text:
+        return text, False
+
+    lines = ["\t<constants>"]
+    for name, value, enum_name, description in constants:
+        lines.append(f'\t\t<constant name="{name}" value="{value}" enum="{enum_name}">')
+        lines.append(f"\t\t\t{description}")
+        lines.append("\t\t</constant>")
+    lines.append("\t</constants>")
+    block = "\n".join(lines) + "\n"
+
+    marker = "</class>"
+    if marker not in text:
+        return text, False
+    return text.replace(marker, block + marker), True
+
+
 def process_file(path: Path) -> bool:
     text = path.read_text(encoding="utf-8")
     class_match = CLASS_PATTERN.search(text)
@@ -167,8 +236,9 @@ def process_file(path: Path) -> bool:
     text, rename_changed = rename_signal_params(text, class_name)
     text, tabs_changed = convert_codeblocks(text)
     text, gkerror_changed = sanitize_gkerror_refs(text)
+    text, constants_changed = ensure_constants(text, class_name)
 
-    if enums_changed or skip_changed or rename_changed or tabs_changed or gkerror_changed:
+    if enums_changed or skip_changed or rename_changed or tabs_changed or gkerror_changed or constants_changed:
         path.write_text(text, encoding="utf-8")
         return True
     return False

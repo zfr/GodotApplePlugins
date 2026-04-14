@@ -4,7 +4,7 @@ struct Options {
     var baseDirectory: String = "."
     var docsPath: String = "doc_classes"
     var outputPath: String = "Generated/GodotApplePluginsStub"
-    var entrySymbol: String = "godot_apple_plugins_stub_init"
+    var entrySymbol: String = "godot_apple_plugins_start"
     var libraryBasename: String = "godot_apple_plugins_stub"
     var selectedFiles: [String] = []
 
@@ -90,7 +90,7 @@ struct Options {
       --files <a,b,c>        Comma-separated XML files or class names to include.
       --docs <path>          XML documentation directory. Default: doc_classes
       --output <path>        Output directory. Default: Generated/GodotApplePluginsStub
-      --entry-symbol <name>  GDExtension entry symbol. Default: godot_apple_plugins_stub_init
+      --entry-symbol <name>  GDExtension entry symbol. Default: godot_apple_plugins_start
       --library-name <name>  Basename for generated files/library. Default: godot_apple_plugins_stub
     """
 }
@@ -412,10 +412,26 @@ enum GeneratorModel {
             return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_ARRAY", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
         case "PackedByteArray":
             return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_PACKED_BYTE_ARRAY", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
+        case "PackedInt32Array":
+            return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_PACKED_INT32_ARRAY", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
+        case "PackedInt64Array":
+            return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_PACKED_INT64_ARRAY", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
+        case "PackedFloat32Array":
+            return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_PACKED_FLOAT32_ARRAY", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
+        case "PackedVector2Array":
+            return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_PACKED_VECTOR2_ARRAY", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
+        case "PackedVector3Array":
+            return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_PACKED_VECTOR3_ARRAY", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
         case "PackedStringArray":
             return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_PACKED_STRING_ARRAY", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
+        case "Vector2":
+            return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_VECTOR2", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
+        case "Vector3":
+            return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_VECTOR3", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
         case "Rect2":
             return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_RECT2", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
+        case "Transform3D":
+            return GodotTypeInfo(variantType: "GDEXTENSION_VARIANT_TYPE_TRANSFORM3D", className: "", usageExpression: "GAP_PROPERTY_USAGE_DEFAULT")
         case "Variant":
             return GodotTypeInfo(
                 variantType: "GDEXTENSION_VARIANT_TYPE_NIL",
@@ -474,11 +490,11 @@ enum CEmitter {
         #define GAP_PROPERTY_USAGE_NIL_IS_VARIANT 131072u
 
         typedef struct {
-            uint64_t opaque[1];
+            uintptr_t opaque[3];
         } GAPStubStringStorage;
 
         typedef struct {
-            uint64_t opaque[1];
+            uintptr_t opaque[3];
         } GAPStubStringNameStorage;
 
         typedef struct {
@@ -538,14 +554,19 @@ enum CEmitter {
         } GAPStubClassDescriptor;
 
         typedef struct {
-            const GAPStubClassDescriptor *descriptor;
-        } GAPStubInstance;
-
-        typedef struct {
             GAPStubStringNameStorage name;
             GAPStubStringNameStorage class_name;
             GAPStubStringStorage hint_string;
         } GAPStubPropertyInfoTemp;
+
+        typedef void (*GAPStubPersistentCleanup)(void *ptr, size_t count);
+
+        typedef struct GAPStubPersistentAllocation {
+            void *ptr;
+            size_t count;
+            GAPStubPersistentCleanup cleanup;
+            struct GAPStubPersistentAllocation *next;
+        } GAPStubPersistentAllocation;
 
         typedef struct {
             GDExtensionInterfaceMemAlloc mem_alloc;
@@ -555,20 +576,19 @@ enum CEmitter {
             GDExtensionInterfaceStringNameNewWithLatin1Chars string_name_new_with_latin1_chars;
             GDExtensionInterfaceVariantGetPtrDestructor variant_get_ptr_destructor;
             GDExtensionInterfaceVariantNewNil variant_new_nil;
-            GDExtensionInterfaceClassdbConstructObject classdb_construct_object;
             GDExtensionInterfaceClassdbRegisterExtensionClass2 classdb_register_extension_class2;
             GDExtensionInterfaceClassdbRegisterExtensionClassMethod classdb_register_extension_class_method;
             GDExtensionInterfaceClassdbRegisterExtensionClassProperty classdb_register_extension_class_property;
             GDExtensionInterfaceClassdbRegisterExtensionClassSignal classdb_register_extension_class_signal;
             GDExtensionInterfaceClassdbRegisterExtensionClassIntegerConstant classdb_register_extension_class_integer_constant;
             GDExtensionInterfaceClassdbUnregisterExtensionClass classdb_unregister_extension_class;
-            GDExtensionInterfaceObjectSetInstance object_set_instance;
             GDExtensionPtrDestructor string_destructor;
             GDExtensionPtrDestructor string_name_destructor;
         } GAPStubAPI;
 
         static GAPStubAPI gap_api;
         static GDExtensionClassLibraryPtr gap_library;
+        static GAPStubPersistentAllocation *gap_persistent_allocations;
 
         static void gap_report_unimplemented(const char *callable_name) {
             char message[512];
@@ -625,6 +645,70 @@ enum CEmitter {
             gap_string_name_destroy(&temp->name);
         }
 
+        static void gap_cleanup_string_name_storage(void *ptr, size_t count) {
+            GAPStubStringNameStorage *items = (GAPStubStringNameStorage *)ptr;
+            size_t index;
+
+            for (index = 0; index < count; ++index) {
+                gap_string_name_destroy(&items[index]);
+            }
+        }
+
+        static void gap_cleanup_property_info_temp(void *ptr, size_t count) {
+            GAPStubPropertyInfoTemp *items = (GAPStubPropertyInfoTemp *)ptr;
+            size_t index;
+
+            for (index = 0; index < count; ++index) {
+                gap_property_info_destroy(&items[index]);
+            }
+        }
+
+        static void *gap_persistent_alloc(size_t item_size, size_t count, GAPStubPersistentCleanup cleanup) {
+            GAPStubPersistentAllocation *allocation;
+            size_t total_size;
+
+            if (count == 0 || item_size == 0) {
+                return NULL;
+            }
+
+            allocation = (GAPStubPersistentAllocation *)gap_api.mem_alloc(sizeof(GAPStubPersistentAllocation));
+            if (allocation == NULL) {
+                return NULL;
+            }
+
+            total_size = item_size * count;
+            allocation->ptr = gap_api.mem_alloc(total_size);
+            if (allocation->ptr == NULL) {
+                gap_api.mem_free(allocation);
+                return NULL;
+            }
+
+            memset(allocation->ptr, 0, total_size);
+            allocation->count = count;
+            allocation->cleanup = cleanup;
+            allocation->next = gap_persistent_allocations;
+            gap_persistent_allocations = allocation;
+
+            return allocation->ptr;
+        }
+
+        static void gap_release_persistent_allocations(void) {
+            GAPStubPersistentAllocation *allocation = gap_persistent_allocations;
+
+            while (allocation != NULL) {
+                GAPStubPersistentAllocation *next = allocation->next;
+
+                if (allocation->cleanup != NULL) {
+                    allocation->cleanup(allocation->ptr, allocation->count);
+                }
+                gap_api.mem_free(allocation->ptr);
+                gap_api.mem_free(allocation);
+                allocation = next;
+            }
+
+            gap_persistent_allocations = NULL;
+        }
+
         static void gap_stub_method_call(
             void *method_userdata,
             GDExtensionClassInstancePtr p_instance,
@@ -653,30 +737,13 @@ enum CEmitter {
 
         static GDExtensionObjectPtr gap_stub_create_instance(void *class_userdata) {
             const GAPStubClassDescriptor *descriptor = (const GAPStubClassDescriptor *)class_userdata;
-            GAPStubStringNameStorage class_name;
-            GAPStubInstance *instance;
-            GDExtensionObjectPtr object;
-
-            gap_string_name_init(&class_name, descriptor->name);
-            object = gap_api.classdb_construct_object((GDExtensionConstStringNamePtr)&class_name);
-
-            if (object != NULL) {
-                instance = (GAPStubInstance *)gap_api.mem_alloc(sizeof(GAPStubInstance));
-                if (instance != NULL) {
-                    instance->descriptor = descriptor;
-                    gap_api.object_set_instance(object, (GDExtensionConstStringNamePtr)&class_name, instance);
-                }
-            }
-
-            gap_string_name_destroy(&class_name);
-            return object;
+            gap_report_unimplemented(descriptor->name);
+            return NULL;
         }
 
         static void gap_stub_free_instance(void *class_userdata, GDExtensionClassInstancePtr p_instance) {
             (void)class_userdata;
-            if (p_instance != NULL) {
-                gap_api.mem_free(p_instance);
-            }
+            (void)p_instance;
         }
 
         """)
@@ -797,125 +864,118 @@ enum CEmitter {
         static const size_t gap_class_count = sizeof(gap_classes) / sizeof(gap_classes[0]);
 
         static void gap_register_method(const GAPStubMethodDescriptor *method, GDExtensionConstStringNamePtr class_name) {
-            GAPStubStringNameStorage method_name;
-            GAPStubPropertyInfoTemp return_temp;
+            GAPStubStringNameStorage *method_name;
+            GAPStubPropertyInfoTemp *return_temp = NULL;
             GAPStubPropertyInfoTemp *argument_temps = NULL;
-            GDExtensionPropertyInfo return_info;
+            GDExtensionPropertyInfo *return_info = NULL;
             GDExtensionPropertyInfo *arguments_info = NULL;
             GDExtensionClassMethodArgumentMetadata *arguments_metadata = NULL;
-            GDExtensionClassMethodInfo method_info;
-            uint32_t index;
+            GDExtensionClassMethodInfo *method_info;
 
-            memset(&return_temp, 0, sizeof(return_temp));
-            memset(&return_info, 0, sizeof(return_info));
-            memset(&method_info, 0, sizeof(method_info));
+            method_name = (GAPStubStringNameStorage *)gap_persistent_alloc(sizeof(GAPStubStringNameStorage), 1, gap_cleanup_string_name_storage);
+            method_info = (GDExtensionClassMethodInfo *)gap_persistent_alloc(sizeof(GDExtensionClassMethodInfo), 1, NULL);
+            if (method_name == NULL || method_info == NULL) {
+                gap_report_unimplemented(method->display_name);
+                return;
+            }
 
-            gap_string_name_init(&method_name, method->name);
-            method_info.name = (GDExtensionStringNamePtr)&method_name;
-            method_info.method_userdata = (void *)method;
-            method_info.call_func = gap_stub_method_call;
-            method_info.ptrcall_func = NULL;
-            method_info.method_flags = method->flags;
-            method_info.has_return_value = method->has_return_value;
-            method_info.return_value_metadata = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
+            gap_string_name_init(method_name, method->name);
+            method_info->name = (GDExtensionStringNamePtr)method_name;
+            method_info->method_userdata = (void *)method;
+            method_info->call_func = gap_stub_method_call;
+            method_info->ptrcall_func = NULL;
+            method_info->method_flags = method->flags;
+            method_info->has_return_value = method->has_return_value;
+            method_info->return_value_metadata = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
 
             if (method->has_return_value) {
-                gap_property_info_init(&return_temp, &return_info, "return_value", &method->return_type);
-                method_info.return_value_info = &return_info;
+                return_temp = (GAPStubPropertyInfoTemp *)gap_persistent_alloc(sizeof(GAPStubPropertyInfoTemp), 1, gap_cleanup_property_info_temp);
+                return_info = (GDExtensionPropertyInfo *)gap_persistent_alloc(sizeof(GDExtensionPropertyInfo), 1, NULL);
+                if (return_temp == NULL || return_info == NULL) {
+                    gap_report_unimplemented(method->display_name);
+                    return;
+                }
+                gap_property_info_init(return_temp, return_info, "return_value", &method->return_type);
+                method_info->return_value_info = return_info;
             }
 
             if (method->argument_count > 0) {
-                argument_temps = (GAPStubPropertyInfoTemp *)gap_api.mem_alloc(sizeof(GAPStubPropertyInfoTemp) * method->argument_count);
-                arguments_info = (GDExtensionPropertyInfo *)gap_api.mem_alloc(sizeof(GDExtensionPropertyInfo) * method->argument_count);
-                arguments_metadata = (GDExtensionClassMethodArgumentMetadata *)gap_api.mem_alloc(sizeof(GDExtensionClassMethodArgumentMetadata) * method->argument_count);
+                uint32_t index;
+
+                argument_temps = (GAPStubPropertyInfoTemp *)gap_persistent_alloc(sizeof(GAPStubPropertyInfoTemp), method->argument_count, gap_cleanup_property_info_temp);
+                arguments_info = (GDExtensionPropertyInfo *)gap_persistent_alloc(sizeof(GDExtensionPropertyInfo), method->argument_count, NULL);
+                arguments_metadata = (GDExtensionClassMethodArgumentMetadata *)gap_persistent_alloc(sizeof(GDExtensionClassMethodArgumentMetadata), method->argument_count, NULL);
 
                 if (argument_temps == NULL || arguments_info == NULL || arguments_metadata == NULL) {
                     gap_report_unimplemented(method->display_name);
-                    goto cleanup;
+                    return;
                 }
-
-                memset(argument_temps, 0, sizeof(GAPStubPropertyInfoTemp) * method->argument_count);
-                memset(arguments_info, 0, sizeof(GDExtensionPropertyInfo) * method->argument_count);
 
                 for (index = 0; index < method->argument_count; ++index) {
                     gap_property_info_init(&argument_temps[index], &arguments_info[index], method->arguments[index].name, &method->arguments[index].type);
                     arguments_metadata[index] = GDEXTENSION_METHOD_ARGUMENT_METADATA_NONE;
                 }
 
-                method_info.argument_count = method->argument_count;
-                method_info.arguments_info = arguments_info;
-                method_info.arguments_metadata = arguments_metadata;
+                method_info->argument_count = method->argument_count;
+                method_info->arguments_info = arguments_info;
+                method_info->arguments_metadata = arguments_metadata;
             }
 
-            gap_api.classdb_register_extension_class_method(gap_library, class_name, &method_info);
-
-        cleanup:
-            if (method->argument_count > 0 && argument_temps != NULL) {
-                for (index = 0; index < method->argument_count; ++index) {
-                    gap_property_info_destroy(&argument_temps[index]);
-                }
-            }
-
-            if (arguments_metadata != NULL) {
-                gap_api.mem_free(arguments_metadata);
-            }
-            if (arguments_info != NULL) {
-                gap_api.mem_free(arguments_info);
-            }
-            if (argument_temps != NULL) {
-                gap_api.mem_free(argument_temps);
-            }
-            if (method->has_return_value) {
-                gap_property_info_destroy(&return_temp);
-            }
-            gap_string_name_destroy(&method_name);
+            gap_api.classdb_register_extension_class_method(gap_library, class_name, method_info);
         }
 
         static void gap_register_property(const GAPStubPropertyDescriptor *property, GDExtensionConstStringNamePtr class_name) {
-            GAPStubPropertyInfoTemp property_temp;
-            GAPStubStringNameStorage setter_name;
-            GAPStubStringNameStorage getter_name;
-            GDExtensionPropertyInfo property_info;
+            GAPStubPropertyInfoTemp *property_temp;
+            GAPStubStringNameStorage *setter_name;
+            GAPStubStringNameStorage *getter_name;
+            GDExtensionPropertyInfo *property_info;
 
-            memset(&property_temp, 0, sizeof(property_temp));
-            memset(&property_info, 0, sizeof(property_info));
+            property_temp = (GAPStubPropertyInfoTemp *)gap_persistent_alloc(sizeof(GAPStubPropertyInfoTemp), 1, gap_cleanup_property_info_temp);
+            setter_name = (GAPStubStringNameStorage *)gap_persistent_alloc(sizeof(GAPStubStringNameStorage), 1, gap_cleanup_string_name_storage);
+            getter_name = (GAPStubStringNameStorage *)gap_persistent_alloc(sizeof(GAPStubStringNameStorage), 1, gap_cleanup_string_name_storage);
+            property_info = (GDExtensionPropertyInfo *)gap_persistent_alloc(sizeof(GDExtensionPropertyInfo), 1, NULL);
 
-            gap_property_info_init(&property_temp, &property_info, property->name, &property->type);
-            gap_string_name_init(&setter_name, property->setter);
-            gap_string_name_init(&getter_name, property->getter);
+            if (property_temp == NULL || setter_name == NULL || getter_name == NULL || property_info == NULL) {
+                gap_report_unimplemented(property->name);
+                return;
+            }
+
+            gap_property_info_init(property_temp, property_info, property->name, &property->type);
+            gap_string_name_init(setter_name, property->setter);
+            gap_string_name_init(getter_name, property->getter);
 
             gap_api.classdb_register_extension_class_property(
                 gap_library,
                 class_name,
-                &property_info,
-                (GDExtensionConstStringNamePtr)&setter_name,
-                (GDExtensionConstStringNamePtr)&getter_name
+                property_info,
+                (GDExtensionConstStringNamePtr)setter_name,
+                (GDExtensionConstStringNamePtr)getter_name
             );
-
-            gap_string_name_destroy(&getter_name);
-            gap_string_name_destroy(&setter_name);
-            gap_property_info_destroy(&property_temp);
         }
 
         static void gap_register_signal(const GAPStubSignalDescriptor *signal, GDExtensionConstStringNamePtr class_name) {
-            GAPStubStringNameStorage signal_name;
+            GAPStubStringNameStorage *signal_name;
             GAPStubPropertyInfoTemp *argument_temps = NULL;
             GDExtensionPropertyInfo *arguments = NULL;
-            uint32_t index;
 
-            gap_string_name_init(&signal_name, signal->name);
+            signal_name = (GAPStubStringNameStorage *)gap_persistent_alloc(sizeof(GAPStubStringNameStorage), 1, gap_cleanup_string_name_storage);
+            if (signal_name == NULL) {
+                gap_report_unimplemented(signal->name);
+                return;
+            }
+
+            gap_string_name_init(signal_name, signal->name);
 
             if (signal->argument_count > 0) {
-                argument_temps = (GAPStubPropertyInfoTemp *)gap_api.mem_alloc(sizeof(GAPStubPropertyInfoTemp) * signal->argument_count);
-                arguments = (GDExtensionPropertyInfo *)gap_api.mem_alloc(sizeof(GDExtensionPropertyInfo) * signal->argument_count);
+                uint32_t index;
+
+                argument_temps = (GAPStubPropertyInfoTemp *)gap_persistent_alloc(sizeof(GAPStubPropertyInfoTemp), signal->argument_count, gap_cleanup_property_info_temp);
+                arguments = (GDExtensionPropertyInfo *)gap_persistent_alloc(sizeof(GDExtensionPropertyInfo), signal->argument_count, NULL);
 
                 if (argument_temps == NULL || arguments == NULL) {
                     gap_report_unimplemented(signal->name);
-                    goto cleanup;
+                    return;
                 }
-
-                memset(argument_temps, 0, sizeof(GAPStubPropertyInfoTemp) * signal->argument_count);
-                memset(arguments, 0, sizeof(GDExtensionPropertyInfo) * signal->argument_count);
 
                 for (index = 0; index < signal->argument_count; ++index) {
                     gap_property_info_init(&argument_temps[index], &arguments[index], signal->arguments[index].name, &signal->arguments[index].type);
@@ -925,69 +985,64 @@ enum CEmitter {
             gap_api.classdb_register_extension_class_signal(
                 gap_library,
                 class_name,
-                (GDExtensionConstStringNamePtr)&signal_name,
+                (GDExtensionConstStringNamePtr)signal_name,
                 arguments,
                 signal->argument_count
             );
-
-        cleanup:
-            if (signal->argument_count > 0 && argument_temps != NULL) {
-                for (index = 0; index < signal->argument_count; ++index) {
-                    gap_property_info_destroy(&argument_temps[index]);
-                }
-            }
-            if (arguments != NULL) {
-                gap_api.mem_free(arguments);
-            }
-            if (argument_temps != NULL) {
-                gap_api.mem_free(argument_temps);
-            }
-            gap_string_name_destroy(&signal_name);
         }
 
         static void gap_register_constant(const GAPStubConstantDescriptor *constant, GDExtensionConstStringNamePtr class_name) {
-            GAPStubStringNameStorage enum_name;
-            GAPStubStringNameStorage constant_name;
+            GAPStubStringNameStorage *enum_name;
+            GAPStubStringNameStorage *constant_name;
 
-            gap_string_name_init(&enum_name, constant->enum_name);
-            gap_string_name_init(&constant_name, constant->name);
+            enum_name = (GAPStubStringNameStorage *)gap_persistent_alloc(sizeof(GAPStubStringNameStorage), 1, gap_cleanup_string_name_storage);
+            constant_name = (GAPStubStringNameStorage *)gap_persistent_alloc(sizeof(GAPStubStringNameStorage), 1, gap_cleanup_string_name_storage);
+            if (enum_name == NULL || constant_name == NULL) {
+                gap_report_unimplemented(constant->name);
+                return;
+            }
+
+            gap_string_name_init(enum_name, constant->enum_name);
+            gap_string_name_init(constant_name, constant->name);
 
             gap_api.classdb_register_extension_class_integer_constant(
                 gap_library,
                 class_name,
-                (GDExtensionConstStringNamePtr)&enum_name,
-                (GDExtensionConstStringNamePtr)&constant_name,
+                (GDExtensionConstStringNamePtr)enum_name,
+                (GDExtensionConstStringNamePtr)constant_name,
                 constant->value,
                 constant->is_bitfield
             );
-
-            gap_string_name_destroy(&constant_name);
-            gap_string_name_destroy(&enum_name);
         }
 
         static void gap_register_class_shell(const GAPStubClassDescriptor *descriptor) {
-            GAPStubStringNameStorage class_name;
-            GAPStubStringNameStorage parent_name;
-            GDExtensionClassCreationInfo2 class_info;
+            GAPStubStringNameStorage *class_name;
+            GAPStubStringNameStorage *parent_name;
+            GDExtensionClassCreationInfo2 *class_info;
 
-            memset(&class_info, 0, sizeof(class_info));
-            gap_string_name_init(&class_name, descriptor->name);
-            gap_string_name_init(&parent_name, descriptor->parent_name);
+            class_name = (GAPStubStringNameStorage *)gap_persistent_alloc(sizeof(GAPStubStringNameStorage), 1, gap_cleanup_string_name_storage);
+            parent_name = (GAPStubStringNameStorage *)gap_persistent_alloc(sizeof(GAPStubStringNameStorage), 1, gap_cleanup_string_name_storage);
+            class_info = (GDExtensionClassCreationInfo2 *)gap_persistent_alloc(sizeof(GDExtensionClassCreationInfo2), 1, NULL);
 
-            class_info.is_exposed = 1;
-            class_info.create_instance_func = gap_stub_create_instance;
-            class_info.free_instance_func = gap_stub_free_instance;
-            class_info.class_userdata = (void *)descriptor;
+            if (class_name == NULL || parent_name == NULL || class_info == NULL) {
+                gap_report_unimplemented(descriptor->name);
+                return;
+            }
+
+            gap_string_name_init(class_name, descriptor->name);
+            gap_string_name_init(parent_name, descriptor->parent_name);
+
+            class_info->is_exposed = 1;
+            class_info->create_instance_func = gap_stub_create_instance;
+            class_info->free_instance_func = gap_stub_free_instance;
+            class_info->class_userdata = (void *)descriptor;
 
             gap_api.classdb_register_extension_class2(
                 gap_library,
-                (GDExtensionConstStringNamePtr)&class_name,
-                (GDExtensionConstStringNamePtr)&parent_name,
-                &class_info
+                (GDExtensionConstStringNamePtr)class_name,
+                (GDExtensionConstStringNamePtr)parent_name,
+                class_info
             );
-
-            gap_string_name_destroy(&parent_name);
-            gap_string_name_destroy(&class_name);
         }
 
         static void gap_register_class_members(const GAPStubClassDescriptor *descriptor) {
@@ -1053,6 +1108,7 @@ enum CEmitter {
             (void)userdata;
             if (level == GDEXTENSION_INITIALIZATION_SCENE) {
                 gap_unregister_all();
+                gap_release_persistent_allocations();
             }
         }
 
@@ -1087,13 +1143,11 @@ enum CEmitter {
             GAP_LOAD_REQUIRED(string_name_new_with_latin1_chars, "string_name_new_with_latin1_chars", GDExtensionInterfaceStringNameNewWithLatin1Chars);
             GAP_LOAD_REQUIRED(variant_get_ptr_destructor, "variant_get_ptr_destructor", GDExtensionInterfaceVariantGetPtrDestructor);
             GAP_LOAD_REQUIRED(variant_new_nil, "variant_new_nil", GDExtensionInterfaceVariantNewNil);
-            GAP_LOAD_REQUIRED(classdb_construct_object, "classdb_construct_object", GDExtensionInterfaceClassdbConstructObject);
             GAP_LOAD_REQUIRED(classdb_register_extension_class2, "classdb_register_extension_class2", GDExtensionInterfaceClassdbRegisterExtensionClass2);
             GAP_LOAD_REQUIRED(classdb_register_extension_class_method, "classdb_register_extension_class_method", GDExtensionInterfaceClassdbRegisterExtensionClassMethod);
             GAP_LOAD_REQUIRED(classdb_register_extension_class_property, "classdb_register_extension_class_property", GDExtensionInterfaceClassdbRegisterExtensionClassProperty);
             GAP_LOAD_REQUIRED(classdb_register_extension_class_signal, "classdb_register_extension_class_signal", GDExtensionInterfaceClassdbRegisterExtensionClassSignal);
             GAP_LOAD_REQUIRED(classdb_register_extension_class_integer_constant, "classdb_register_extension_class_integer_constant", GDExtensionInterfaceClassdbRegisterExtensionClassIntegerConstant);
-            GAP_LOAD_REQUIRED(object_set_instance, "object_set_instance", GDExtensionInterfaceObjectSetInstance);
             GAP_LOAD_OPTIONAL(classdb_unregister_extension_class, "classdb_unregister_extension_class", GDExtensionInterfaceClassdbUnregisterExtensionClass);
 
             gap_api.string_destructor = gap_api.variant_get_ptr_destructor(GDEXTENSION_VARIANT_TYPE_STRING);
