@@ -129,6 +129,7 @@ jobs:
     runs-on:
       - self-hosted
       - macos
+    timeout-minutes: 120
     permissions:
       contents: write
     env:
@@ -268,9 +269,18 @@ jobs:
         if: always() && env.KEYCHAIN_PATH != ''
         run: |
           security delete-keychain "$KEYCHAIN_PATH" || true
-          if [ -n "${DEFAULT_KEYCHAIN_PATH:-}" ]; then
+
+          if [ -n "${DEFAULT_KEYCHAIN_PATH:-}" ] && [ -e "$DEFAULT_KEYCHAIN_PATH" ]; then
             security default-keychain -d user -s "$DEFAULT_KEYCHAIN_PATH" || true
           fi
-          if [ -n "${ORIGINAL_KEYCHAINS:-}" ]; then
-            security list-keychains -d user -s $ORIGINAL_KEYCHAINS || true
+
+          existing_keychains=()
+          for keychain in ${ORIGINAL_KEYCHAINS:-}; do
+            if [ -e "$keychain" ]; then
+              existing_keychains+=("$keychain")
+            fi
+          done
+
+          if [ "${#existing_keychains[@]}" -gt 0 ]; then
+            security list-keychains -d user -s "${existing_keychains[@]}" || true
           fi
