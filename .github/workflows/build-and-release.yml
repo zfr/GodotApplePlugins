@@ -178,6 +178,9 @@ jobs:
           } >> "$GITHUB_ENV"
 
       - name: Build xcframework package
+        env:
+          XCODEBUILD_LOG_ON_ERROR: 1
+          XCODEBUILD_LOG_DIR: ${{ runner.temp }}
         run: make build
 
       - name: Package for Distribution
