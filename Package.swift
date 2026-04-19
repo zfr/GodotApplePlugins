@@ -34,7 +34,15 @@ let package = Package(
         ),
     ],
     dependencies: [
-        // Use local SwiftGodot clone (same v0.74.0 as godot-iap) for shared runtime
+        // BeatCells patch: use local SwiftGodot submodule (shared by all
+        // SwiftGodot-based plugins: godot-iap, godot-google-signin,
+        // godot-connection-state, godot-app-integrity, GodotApplePlugins).
+        // Combined with SwiftGodotRuntime (dynamic) below, this ensures a
+        // single SwiftGodotRuntime.framework is bundled at the host project
+        // level — no duplicate class conflicts at runtime.
+        //
+        // Upstream default is pinned URL + SwiftGodotRuntimeStatic. Keep this
+        // patch on future upstream merges; see commit a20bb2e for context.
         .package(name: "SwiftGodot", path: "../SwiftGodot")
     ],
     targets: [

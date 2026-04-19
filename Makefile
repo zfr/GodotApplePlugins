@@ -9,6 +9,8 @@ WORKSPACE ?= .swiftpm/xcode/package.xcworkspace
 SCHEME ?= GodotApplePlugins
 FRAMEWORK_NAMES ?= GodotApplePlugins
 XCODEBUILD ?= xcodebuild
+XCODEBUILD_LOG_ON_ERROR ?=
+XCODEBUILD_LOG_DIR ?=
 CC ?= cc
 
 STUB_BASE_DIR ?= $(CURDIR)
@@ -42,6 +44,23 @@ generate-stubs:
 
 build build2:
 	set -e; \
+	run_xcodebuild() { \
+		if [ -n "$(XCODEBUILD_LOG_ON_ERROR)" ]; then \
+			log_dir="$(XCODEBUILD_LOG_DIR)"; \
+			if [ -n "$$log_dir" ]; then \
+				mkdir -p "$$log_dir"; \
+			fi; \
+			log_file=$$(mktemp "$${log_dir:-$${TMPDIR:-/tmp}}/xcodebuild.XXXXXX.log"); \
+			if ! "$$@" >"$$log_file" 2>&1; then \
+				echo "xcodebuild failed; dumping $$log_file"; \
+				cat "$$log_file"; \
+				return 1; \
+			fi; \
+			rm -f "$$log_file"; \
+		else \
+			"$$@"; \
+		fi; \
+	}; \
 	swift build; \
 	for dest in $(DESTINATIONS); do \
 		platform_name=`echo "$$dest" | sed -n 's/.*platform=\([^,]*\).*/\1/p'`; \
@@ -67,7 +86,7 @@ build build2:
 			suffix="$$arch_name"; \
 		fi; \
 	    for framework in $(FRAMEWORK_NAMES); do \
-			$(XCODEBUILD) \
+			run_xcodebuild $(XCODEBUILD) \
 				-workspace '$(WORKSPACE)' \
 				-scheme $$framework \
 				-configuration '$(CONFIG)' \

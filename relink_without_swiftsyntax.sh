@@ -97,29 +97,36 @@ if [[ ! -d "$FRAMEWORK_DIR" ]]; then
 	FRAMEWORK_DIR="$PRODUCTS_DIR/$FRAMEWORK.framework"
 fi
 FRAMEWORK_BINARY="$FRAMEWORK_DIR/$FRAMEWORK"
+FRAMEWORK_VERSIONED_BINARY=""
+
+if [[ "$platform_lc" = "macos" ]]; then
+	for candidate in \
+		"$FRAMEWORK_DIR/Versions/Current/$FRAMEWORK" \
+		"$FRAMEWORK_DIR/Versions/A/$FRAMEWORK"; do
+		if [[ -f "$candidate" ]]; then
+			FRAMEWORK_VERSIONED_BINARY="$candidate"
+			break
+		fi
+	done
+fi
 
 # On macOS, the framework binary at $FRAMEWORK_DIR/$FRAMEWORK is typically a symlink
 # to Versions/Current/$FRAMEWORK. We want to replace the real file, not the symlink,
 # otherwise we'd destroy the framework's versioned layout.
 FRAMEWORK_BINARY_REAL=""
-if [[ -e "$FRAMEWORK_BINARY" ]]; then
+if [[ -n "$FRAMEWORK_VERSIONED_BINARY" ]]; then
+	FRAMEWORK_BINARY_REAL="$FRAMEWORK_VERSIONED_BINARY"
+elif [[ -e "$FRAMEWORK_BINARY" ]]; then
 	FRAMEWORK_BINARY_REAL=$(python3 - <<'PY' "$FRAMEWORK_BINARY"
 import os, sys
 print(os.path.realpath(sys.argv[1]))
 PY
-)
+	)
 fi
 
 if [[ -z "$FRAMEWORK_BINARY_REAL" || ! -f "$FRAMEWORK_BINARY_REAL" ]]; then
-	if [[ "$platform_lc" = "macos" ]]; then
-		for candidate in \
-			"$FRAMEWORK_DIR/Versions/A/$FRAMEWORK" \
-			"$FRAMEWORK_DIR/Versions/Current/$FRAMEWORK"; do
-			if [[ -f "$candidate" ]]; then
-				FRAMEWORK_BINARY_REAL="$candidate"
-				break
-			fi
-		done
+	if [[ "$platform_lc" = "macos" && -n "$FRAMEWORK_VERSIONED_BINARY" ]]; then
+		FRAMEWORK_BINARY_REAL="$FRAMEWORK_VERSIONED_BINARY"
 	else
 		FRAMEWORK_BINARY_REAL="$FRAMEWORK_BINARY"
 	fi
@@ -291,6 +298,11 @@ before_size=$(stat -f%z "$FRAMEWORK_BINARY_REAL" 2>/dev/null || stat -c%s "$FRAM
 "${link_args[@]}"
 mv "$tmp_binary" "$FRAMEWORK_BINARY_REAL"
 chmod +x "$FRAMEWORK_BINARY_REAL"
+
+if [[ "$platform_lc" = "macos" && "$FRAMEWORK_BINARY" != "$FRAMEWORK_BINARY_REAL" ]]; then
+	rm -f "$FRAMEWORK_BINARY"
+	ln -s "Versions/Current/$FRAMEWORK" "$FRAMEWORK_BINARY"
+fi
 
 after_size=$(stat -f%z "$FRAMEWORK_BINARY_REAL" 2>/dev/null || stat -c%s "$FRAMEWORK_BINARY_REAL")
 echo "Relinked successfully: $before_size bytes -> $after_size bytes"
