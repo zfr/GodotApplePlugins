@@ -104,6 +104,11 @@ build build2:
 			else \
 				echo "Skipping SwiftSyntax relink for $$framework on $$dest (unsupported platform)"; \
 			fi; \
+			if [ "$$platform_lc" = "ios" ]; then \
+				echo "Q-07: extracting $$framework.framework.dSYM (iOS device)"; \
+				dsymutil "$(DERIVED_DATA)/Build/Products/$(CONFIG)-iphoneos/PackageFrameworks/$$framework.framework/$$framework" \
+					-o "$(DERIVED_DATA)/Build/Products/$(CONFIG)-iphoneos/PackageFrameworks/$$framework.framework.dSYM"; \
+			fi; \
 	    done;  \
 	done; \
 
@@ -137,6 +142,7 @@ dist:
 	for framework in $(FRAMEWORK_NAMES); do \
 		rm -rf $(CURDIR)/addons/$$framework/bin/$$framework.xcframework; \
 		rm -rf $(CURDIR)/addons/$$framework/bin/$$framework*.framework; \
+		rm -rf $(CURDIR)/addons/$$framework/bin/$$framework.framework.dSYM; \
 		$(XCODEBUILD) -create-xcframework \
 			-framework $(DERIVED_DATA)/Build/Products/$(CONFIG)-iphoneos/PackageFrameworks/$$framework.framework \
 			-framework $(DERIVED_DATA)simulator/Build/Products/$(CONFIG)-iphonesimulator/PackageFrameworks/$$framework.framework \
@@ -145,7 +151,30 @@ dist:
 		rsync -a $(DERIVED_DATA)arm64/Build/Products/$(CONFIG)/PackageFrameworks/$${framework}.framework/ $(CURDIR)/addons/$$framework/bin/$${framework}.framework; \
 		rsync -a doc_classes/ $(CURDIR)/addons/$$framework/bin/$${framework}_x64.framework/Resources/doc_classes/; \
 		rsync -a doc_classes/ $(CURDIR)/addons/$$framework/bin/$${framework}.framework/Resources/doc_classes/; \
+		if [ -d "$(DERIVED_DATA)/Build/Products/$(CONFIG)-iphoneos/PackageFrameworks/$${framework}.framework.dSYM" ]; then \
+			echo "Q-07: copying $${framework}.framework.dSYM (iOS device) to plugin addon"; \
+			cp -R $(DERIVED_DATA)/Build/Products/$(CONFIG)-iphoneos/PackageFrameworks/$${framework}.framework.dSYM $(CURDIR)/addons/$$framework/bin/; \
+		fi; \
 	done
+	@# Q-07: refresh game/addons in BeatCells monorepo (no-op when standalone).
+	@# GodotApplePlugins does NOT use SwiftGodotRuntime — only per-plugin sync.
+	@REPO_ROOT_RESOLVED=$$(git rev-parse --show-superproject-working-tree 2>/dev/null || git rev-parse --show-toplevel); \
+	if [ -d "$$REPO_ROOT_RESOLVED/game/addons" ]; then \
+		for framework in $(FRAMEWORK_NAMES); do \
+			GAME_DIR="$$REPO_ROOT_RESOLVED/game/addons/$$framework/bin"; \
+			echo "Q-07: refreshing game addon (BeatCells monorepo: $$GAME_DIR)"; \
+			mkdir -p "$$GAME_DIR"; \
+			rm -rf "$$GAME_DIR/$$framework.xcframework" "$$GAME_DIR/$${framework}.framework" "$$GAME_DIR/$${framework}_x64.framework" "$$GAME_DIR/$${framework}.framework.dSYM"; \
+			cp -R $(CURDIR)/addons/$$framework/bin/$${framework}.xcframework "$$GAME_DIR/"; \
+			cp -R $(CURDIR)/addons/$$framework/bin/$${framework}.framework "$$GAME_DIR/"; \
+			cp -R $(CURDIR)/addons/$$framework/bin/$${framework}_x64.framework "$$GAME_DIR/"; \
+			if [ -d "$(CURDIR)/addons/$$framework/bin/$${framework}.framework.dSYM" ]; then \
+				cp -R $(CURDIR)/addons/$$framework/bin/$${framework}.framework.dSYM "$$GAME_DIR/"; \
+			fi; \
+		done; \
+	else \
+		echo "Q-07: standalone plugin build (no monorepo) — skipping game/addons sync"; \
+	fi
 
 XCFRAMEWORK_GODOTAPPLEPLUGINS ?= $(CURDIR)/addons/GodotApplePlugins/bin/GodotApplePlugins.xcframework
 DOCS_REMOTE ?= origin
